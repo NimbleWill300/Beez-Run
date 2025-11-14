@@ -59,10 +59,8 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
         }
     }
     
-    public static void main(String[] args) {
-        FenetreDeJeu fenetre = new FenetreDeJeu();
-        fenetre.setVisible(true);
-    }
+//    public static void main(String[] args) {
+//            }
 
     @Override
     public void keyTyped(KeyEvent evt) {
