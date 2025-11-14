@@ -31,6 +31,9 @@ public class InitialisationBDD {
             ResultSet resultat = statement.executeQuery("SELECT * FROM abeille;");
             OutilsJDBC.afficherResultSet(resultat);
             
+            ResultSet resultat2 = statement.executeQuery("SELECT * FROM frelon;");
+            OutilsJDBC.afficherResultSet(resultat2);
+            
 //            statement.executeUpdate("DROP TABLE dresseurs");
 //            statement.executeUpdate("CREATE TABLE tp_jdbc.dresseurs ( "
 //                    + "pseudo VARCHAR(32) NOT NULL, "

@@ -8,9 +8,15 @@ package jeu;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import outils.SingletonJDBC;
 
 /**
  * Exemple de classe lutin
@@ -37,6 +43,25 @@ public class Monster{
     }
 
     public void miseAJour() {
+        
+        try {
+
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
+
+            PreparedStatement requete = connexion.prepareStatement("SELECT x, y FROM frelon WHERE nom = ?");
+            requete.setString(1, "frelon2");
+            ResultSet resultat = requete.executeQuery();
+            while (resultat.next()) {
+                x = resultat.getDouble("x");
+                y = resultat.getDouble("y");
+            }
+
+            requete.close();
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        
         if(y <= squareSizeMin && x < squareSizeMax ){
             x = x + vitesse;
         }
@@ -52,6 +77,22 @@ public class Monster{
     }
 
     public void rendu(Graphics2D contexte) {
+        try {
+
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
+
+            PreparedStatement requete = connexion.prepareStatement("UPDATE frelon SET x = ?, y = ? WHERE nom = ?");
+            requete.setDouble(1, x);
+            requete.setDouble(2, y);
+            requete.setString(3, "frelon2");
+            int nombreDeModifications = requete.executeUpdate();
+
+            requete.close();
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        
         contexte.drawImage(this.sprite, (int) x, (int) y, null);
     }
 

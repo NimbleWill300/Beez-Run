@@ -51,7 +51,7 @@ public class Avatar {
     public void miseAJour() {
         try {
 
-            Connection connexion = DriverManager.getConnection("jdbc:mariadb://nemrod.ens2m.fr:3306/2025-2026_s1_vs1_tp2_abeille", "etudiant", "YTDTvj9TR3CDYCmP");
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
 
             PreparedStatement requete = connexion.prepareStatement("SELECT x, y FROM abeille WHERE pseudo = ?");
             requete.setString(1, "abeille1");
@@ -62,7 +62,7 @@ public class Avatar {
             }
 
             requete.close();
-            connexion.close();
+            
 
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -89,7 +89,7 @@ public class Avatar {
     public void rendu(Graphics2D contexte) {
         try {
 
-            Connection connexion = DriverManager.getConnection("jdbc:mariadb://nemrod.ens2m.fr:3306/2025-2026_s1_vs1_tp2_abeille", "etudiant", "YTDTvj9TR3CDYCmP");
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
 
             PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET x = ?, y = ? WHERE pseudo = ?");
             requete.setDouble(1, x);
@@ -98,7 +98,6 @@ public class Avatar {
             int nombreDeModifications = requete.executeUpdate();
 
             requete.close();
-            connexion.close();
 
         } catch (SQLException ex) {
             ex.printStackTrace();
