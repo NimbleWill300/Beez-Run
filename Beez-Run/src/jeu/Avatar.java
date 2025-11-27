@@ -45,16 +45,15 @@ public class Avatar {
         this.toucheDroite = false;
         this.toucheGauche = false;
         this.pseudo = "abeille1";
-
-    }
-
-    public void miseAJour() {
+        
+        updateConnexion(true);
+        
         try {
 
             Connection connexion = SingletonJDBC.getInstance().getConnection();
 
             PreparedStatement requete = connexion.prepareStatement("SELECT x, y FROM abeille WHERE pseudo = ?");
-            requete.setString(1, "abeille1");
+            requete.setString(1, this.pseudo);
             ResultSet resultat = requete.executeQuery();
             while (resultat.next()) {
                 x = resultat.getDouble("x");
@@ -62,11 +61,15 @@ public class Avatar {
             }
 
             requete.close();
-            
 
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+
+    }
+
+    public void miseAJour() {
+        
         if (this.toucheHaut) {
             y -= 5;
         }
@@ -79,14 +82,11 @@ public class Avatar {
         if (this.toucheGauche) {
             x -= 5;
         }
-        
         this.toucheHaut = false;
         this.toucheBas = false;
         this.toucheDroite = false;
         this.toucheGauche = false;
-    }
-
-    public void rendu(Graphics2D contexte) {
+        
         try {
 
             Connection connexion = SingletonJDBC.getInstance().getConnection();
@@ -94,8 +94,28 @@ public class Avatar {
             PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET x = ?, y = ? WHERE pseudo = ?");
             requete.setDouble(1, x);
             requete.setDouble(2, y);
-            requete.setString(3, "abeille1");
+            requete.setString(3, this.pseudo);
             int nombreDeModifications = requete.executeUpdate();
+            
+            requete.close();
+        } 
+        catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void rendu(Graphics2D contexte) {
+        try {
+
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
+
+            PreparedStatement requete = connexion.prepareStatement("SELECT x, y FROM abeille WHERE pseudo = ?");
+            requete.setString(1, this.pseudo);
+            ResultSet resultat = requete.executeQuery();
+            while (resultat.next()) {
+                x = resultat.getDouble("x");
+                y = resultat.getDouble("y");
+            }
 
             requete.close();
 
@@ -142,6 +162,23 @@ public class Avatar {
 
     public void setToucheDroite(boolean etat) {
         this.toucheDroite = etat;
+    }
+    
+    public void updateConnexion(boolean var){
+        try {
+
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
+
+            PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET connecte = ? WHERE pseudo = ?");
+            requete.setBoolean(1, var);
+            requete.setString(2, this.pseudo);
+            int nombreDeModifications = requete.executeUpdate();
+            
+            requete.close();
+        } 
+        catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
 }
