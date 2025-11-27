@@ -38,13 +38,13 @@ public class Avatar {
         try {
             this.sprite = ImageIO.read(getClass().getResource("../resources/abeille.png"));
         } catch (IOException ex) {
-            Logger.getLogger(Avatar_old.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Avatar.class.getName()).log(Level.SEVERE, null, ex);
         }
         this.toucheHaut   = false;
         this.toucheBas    = false;
         this.toucheDroite = false;
         this.toucheGauche = false;
-        this.pseudo = "abeille1";
+        this.pseudo = "abeille4";
         
         updateConnexion(true);
         

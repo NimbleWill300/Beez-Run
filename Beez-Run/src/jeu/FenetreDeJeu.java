@@ -14,6 +14,7 @@ import javax.swing.Timer;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.IOException;
 
 
 /**
@@ -30,7 +31,7 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
     private Timer timer;
     private KeyEvent evt;
     
-    public FenetreDeJeu() {
+    public FenetreDeJeu() throws IOException {
         // initialisation de la fenetre
         this.setSize(907, 913);
         this.setResizable(false);
