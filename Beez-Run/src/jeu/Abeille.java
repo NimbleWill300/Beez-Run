@@ -18,13 +18,13 @@ import outils.SingletonJDBC;
  *
  * @author guillaume.laurent
  */
-public class Dresseurs {
+public class Abeille {
 
     protected BufferedImage sprite;
 //    protected Carte laCarte;
 
 //   (Carte laCarte) dans le parentese
-    public Dresseurs() {
+    public Abeille() {
 //        this.laCarte = laCarte;
         try {
             this.sprite = ImageIO.read(getClass().getResource("../resources/abeille.png"));

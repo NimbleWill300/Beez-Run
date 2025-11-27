@@ -30,7 +30,7 @@ public class Monster{
     protected int stage = 0;
     protected int squareSizeMax = 400;
     protected int squareSizeMin = 50;
-    protected int vitesse = 5;
+    protected int vitesse = 3;
     
 
     public Monster() {

@@ -20,7 +20,7 @@ public class Jeu {
     private int score;
     private Monster uneMonster;
     private Avatar uneAvatar;
-    private Dresseurs uneDresseurs;
+    private Abeille uneDresseurs;
     
     public Jeu() {
         try {
@@ -31,7 +31,7 @@ public class Jeu {
         this.score = 0;
         this.uneMonster = new Monster();
         this.uneAvatar = new Avatar();
-        this.uneDresseurs = new Dresseurs();
+        this.uneDresseurs = new Abeille();
         System.out.print("Hello World");
 
     }
