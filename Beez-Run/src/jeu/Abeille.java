@@ -22,25 +22,32 @@ public class Abeille {
 
     protected BufferedImage sprite;
 //    protected Carte laCarte;
-    private final SpriteSheet uneSpriteSheet;
+    private SpriteSheet uneSpriteSheet;
+    
+    private int currentFrame = 0;   // 0,1,2 (relativo aos frames 2,3,4)
+    private int tick = 0;           // contador de updates
+    private final int ticksPerFrame = 5; // ajusta velocidade da animação
+    
 
-//   (Carte laCarte) dans le parentese
-<<<<<<< Updated upstream
-    public Abeille() {
-=======
+//   (Carte laCarte) dans le parentes
     public Abeille() throws IOException {
->>>>>>> Stashed changes
+
 //        this.laCarte = laCarte;
         this.uneSpriteSheet = new SpriteSheet();
-        try {
-            this.uneSpriteSheet = ImageIO.read(getClass().getResource("../resources/abeille.png"));
-        } catch (IOException ex) {
-            Logger.getLogger(Avatar_old.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        this.sprite = uneSpriteSheet.getFrame(2);
+    
+
     }
 
     public void miseAJour() {
-        
+         // animação de voo: usar frames 2,3,4
+        tick++;
+        if (tick >= ticksPerFrame) {
+            tick = 0;
+            currentFrame = (currentFrame + 1) % 3; // 0,1,2
+            int frameIndex = 2 + currentFrame;     // 2,3,4
+            this.sprite = uneSpriteSheet.getFrame(frameIndex);
+        }     
     }
 
     String names = "abeille1 abeille2 abeille3 abeille4";

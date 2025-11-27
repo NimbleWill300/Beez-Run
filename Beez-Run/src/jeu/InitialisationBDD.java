@@ -5,6 +5,7 @@
  */
 package jeu;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -20,7 +21,7 @@ import outils.OutilsJDBC;
  */
 public class InitialisationBDD {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         try {
 
