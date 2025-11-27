@@ -11,6 +11,10 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.Timer;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+
 
 /**
  * Exemple de fenetre de jeu en utilisant uniquement des commandes
@@ -46,6 +50,25 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
         this.timer = new Timer(40, this);
         this.timer.start();
         this.addKeyListener(this);
+        
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                System.out.println("Fenêtre en train de se fermer...");
+
+                // Marca o avatar como desconectado
+                FenetreDeJeu.this.jeu.getAvatar().updateConnexion(false);
+
+                // Termina o jogo
+                FenetreDeJeu.this.terminer();
+
+                System.out.println("bye bye World");
+
+                // Fecha de verdade a janela / app
+                dispose();       // fecha só a janela
+                // ou: System.exit(0); se quiser matar o programa todo
+            }
+        });
     }
     
     // Methode appelee par le timer et qui effectue la boucle de jeu
@@ -54,9 +77,9 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
         this.jeu.miseAJour();
         this.jeu.rendu(contexte);
         this.jLabel1.repaint();
-        if (this.jeu.estTermine()) {
-            this.timer.stop();
-        }
+//        if (this.jeu.estTermine()) {
+//            this.timer.stop();
+//        }
     }
     
 //    public static void main(String[] args) {
@@ -98,5 +121,9 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
             this.jeu.getAvatar().setToucheBas(false);
         }
 
+    }
+    
+    public void terminer(){
+        this.jeu.getAvatar().updateConnexion(false);
     }
 }

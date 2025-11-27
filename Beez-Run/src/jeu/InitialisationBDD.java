@@ -118,9 +118,10 @@ public class InitialisationBDD {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+        
         FenetreDeJeu fenetre = new FenetreDeJeu();
         fenetre.setVisible(true);
-
+        
     }
 
 }
