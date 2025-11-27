@@ -23,6 +23,7 @@ public class Jeu {
     private Abeille uneDresseurs;
     
     public Jeu() {
+    public Jeu() throws IOException {
         try {
             this.decor = ImageIO.read(getClass().getResource("../resources/background_jeu.png"));
         } catch (IOException ex) {
