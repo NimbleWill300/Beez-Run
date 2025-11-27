@@ -25,6 +25,7 @@ public class Abeille {
     private final SpriteSheet uneSpriteSheet;
 
 //   (Carte laCarte) dans le parentese
+<<<<<<< Updated upstream
     public Abeille() {
 =======
     public Abeille() throws IOException {
@@ -32,7 +33,6 @@ public class Abeille {
 //        this.laCarte = laCarte;
         this.uneSpriteSheet = new SpriteSheet();
         try {
-            this.sprite = ImageIO.read(getClass().getResource("../resources/abeille.png"));
             this.uneSpriteSheet = ImageIO.read(getClass().getResource("../resources/abeille.png"));
         } catch (IOException ex) {
             Logger.getLogger(Avatar_old.class.getName()).log(Level.SEVERE, null, ex);
