@@ -22,18 +22,25 @@ public class Abeille {
 
     protected BufferedImage sprite;
 //    protected Carte laCarte;
+    private final SpriteSheet uneSpriteSheet;
 
 //   (Carte laCarte) dans le parentese
+<<<<<<< Updated upstream
     public Abeille() {
+=======
+    public Abeille() throws IOException {
+>>>>>>> Stashed changes
 //        this.laCarte = laCarte;
+        this.uneSpriteSheet = new SpriteSheet();
         try {
-            this.sprite = ImageIO.read(getClass().getResource("../resources/abeille.png"));
+            this.uneSpriteSheet = ImageIO.read(getClass().getResource("../resources/abeille.png"));
         } catch (IOException ex) {
             Logger.getLogger(Avatar_old.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     public void miseAJour() {
+        
     }
 
     String names = "abeille1 abeille2 abeille3 abeille4";
