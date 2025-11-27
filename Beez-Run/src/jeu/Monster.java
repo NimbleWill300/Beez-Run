@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import outils.SingletonJDBC;
 
+
 public class Monster {
 
     protected BufferedImage sprite;
@@ -27,18 +28,32 @@ public class Monster {
     protected double minDist = Double.MAX_VALUE;
     protected double targetX = 0;
     protected double targetY = 0;
+    
+    private SpriteSheet_frelon uneSpriteSheet_frelon;
+    
+    private int currentFrame = 0;   // 0,1,2 (relativo aos frames 2,3,4)
+    private int tick = 0;           // contador de updates
+    private final int ticksPerFrame = 5; // ajusta velocidade da animação
+    
+//   (Carte laCarte) dans le parentes
 
-    public Monster() {
-        try {
-            this.sprite = ImageIO.read(getClass().getResource("../resources/ferlon.png"));
-        } catch (IOException ex) {
-            Logger.getLogger(Monster.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        lancer();
+    public Monster() throws IOException {
+
+        this.uneSpriteSheet_frelon = new SpriteSheet_frelon();
+        this.sprite = uneSpriteSheet_frelon.getFrame(0);
     }
 
     public void miseAJour() {
-
+        
+                 // animação de voo: usar frames 2,3,4
+        tick++;
+        if (tick >= ticksPerFrame) {
+            tick = 0;
+            currentFrame = (currentFrame + 1) % 3; // 0,1,2
+            int frameIndex = currentFrame;     // 2,3,4
+            this.sprite = uneSpriteSheet_frelon.getFrame(frameIndex);
+        }     
+        
         try {
             Connection connexion = SingletonJDBC.getInstance().getConnection();
 

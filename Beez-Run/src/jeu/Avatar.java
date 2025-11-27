@@ -44,7 +44,7 @@ public class Avatar {
         this.toucheBas    = false;
         this.toucheDroite = false;
         this.toucheGauche = false;
-        this.pseudo = "abeille4";
+        this.pseudo = "abeille1";
         
         updateConnexion(true);
         
