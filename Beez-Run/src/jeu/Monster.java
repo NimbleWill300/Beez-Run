@@ -141,6 +141,8 @@ public class Monster {
                 x_frelon -= vitesse;
             } else if (x_frelon <= squareSizeMin && y_frelon > squareSizeMin) {
                 y_frelon -= vitesse;
+            }else{
+                x_frelon -= vitesse;
             }
         }
     }

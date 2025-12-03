@@ -16,7 +16,7 @@ public class SpriteSheet {
     public static final int FRAME_SIZE = 64;
 
    // private BufferedImage sheet;
-    private BufferedImage[] frames;
+    private BufferedImage[][] frames;
    // private int currentFrame = 2; 
     
     
@@ -37,49 +37,94 @@ public class SpriteSheet {
 
     public SpriteSheet() throws IOException {
 
-        //sheet = ImageIO.read(getClass().getResource("../resources/blue_bee.png"));
-        BufferedImage sheet = ImageIO.read(
-                getClass().getResource("../resources/blue_bee.png")
-        );
-
+        BufferedImage sheet_vert, sheet_mauve, sheet_rouge, sheet_bleu;
+        
+        sheet_vert = ImageIO.read(getClass().getResource("../resources/green_bee.png"));
+        sheet_mauve = ImageIO.read(getClass().getResource("../resources/purple_bee.png"));
+        sheet_rouge = ImageIO.read(getClass().getResource("../resources/red_bee.png"));
+        sheet_bleu = ImageIO.read(getClass().getResource("../resources/blue_bee.png"));
+        
+//        switch (couleur) {
+//            case "vert":
+//                sheet = ImageIO.read(getClass().getResource("../resources/green_bee.png"));
+//                break;
+//            case "mauve":
+//                sheet = ImageIO.read(getClass().getResource("../resources/purple_bee.png"));
+//                break;
+//            case "rouge":
+//                sheet = ImageIO.read(getClass().getResource("../resources/red_bee.png"));
+//                break;
+//            default:
+//                sheet = ImageIO.read(getClass().getResource("../resources/blue_bee.png"));
+//                break;
+//        }
 
         int rows = 4;
         int colsPerRow[] = {4, 4, 4, 3}; // colunas por linha
 
-        frames = new BufferedImage[14];  // seus 14 estados
+        frames = new BufferedImage[4][14];  // seus 14 estados
 
         int index = 0;
 
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < colsPerRow[row]; col++) {
+        for(int i = 0; i < 4; i++){
+            for (int row = 0; row < rows; row++) {
+                for (int col = 0; col < colsPerRow[row]; col++) {
 
-                if (index >= 14) break; // já pegou todos os sprites necessários
+                    if (index >= 14) break; // já pegou todos os sprites necessários
 
-                frames[index] = sheet.getSubimage(
-                        col * FRAME_SIZE,
-                        row * FRAME_SIZE,
-                        FRAME_SIZE,
-                        FRAME_SIZE
-                );
+                    switch(i){
+                        case 0:
+                            frames[i][index] = sheet_vert.getSubimage(
+                                    col * FRAME_SIZE,
+                                    row * FRAME_SIZE,
+                                    FRAME_SIZE,
+                                    FRAME_SIZE
+                            );
+                            break;
+                        case 1:
+                            frames[i][index] = sheet_mauve.getSubimage(
+                                    col * FRAME_SIZE,
+                                    row * FRAME_SIZE,
+                                    FRAME_SIZE,
+                                    FRAME_SIZE
+                            );
+                            break;
+                        case 2:
+                            frames[i][index] = sheet_rouge.getSubimage(
+                                    col * FRAME_SIZE,
+                                    row * FRAME_SIZE,
+                                    FRAME_SIZE,
+                                    FRAME_SIZE
+                            );
+                            break;
+                        case 3:
+                            frames[i][index] = sheet_bleu.getSubimage(
+                                    col * FRAME_SIZE,
+                                    row * FRAME_SIZE,
+                                    FRAME_SIZE,
+                                    FRAME_SIZE
+                            );
+                            break;
+                    }
 
-                index++;
+                    index++;
+                }
             }
+            index = 0;
         }
     }
 
     
-//    public void updateSprite(){
-//    
-//    
-//    
-//    }
-
-    
-    public BufferedImage getFrame(int index) {
-        return frames[index];
+    public BufferedImage getFrame(String couleur, int index) {
+        switch (couleur) {
+            case "vert":
+                return frames[0][index];
+            case "mauve":
+                return frames[1][index];
+            case "rouge":
+                return frames[2][index];
+            default:
+                return frames[3][index];
+        }
     }
-    
-   
-    
 }
-

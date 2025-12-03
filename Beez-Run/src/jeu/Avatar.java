@@ -24,7 +24,7 @@ import java.util.logging.Logger;
  *
  * @author guillaume.laurent
  */
-public class Avatar {
+public final class Avatar {
 
     protected BufferedImage sprite;
     private boolean toucheHaut, toucheBas, toucheDroite, toucheGauche, faceDroite;
@@ -45,7 +45,7 @@ public class Avatar {
         this.toucheBas    = false;
         this.toucheDroite = false;
         this.toucheGauche = false;
-        this.pseudo = "abeille3";
+        this.pseudo = "abeille2";
         
         updateConnexion(true);
         
