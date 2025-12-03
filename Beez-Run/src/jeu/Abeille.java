@@ -58,7 +58,7 @@ public class Abeille {
 
             Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-            PreparedStatement requete = connexion.prepareStatement("SELECT pseudo, x, y, connecte FROM abeille");
+            PreparedStatement requete = connexion.prepareStatement("SELECT pseudo, x, y, connecte, direction FROM abeille");
             ResultSet resultat = requete.executeQuery();
             while (resultat.next()) {
                 
@@ -66,9 +66,15 @@ public class Abeille {
                 double x = resultat.getDouble("x");
                 double y = resultat.getDouble("y");
                 boolean status = resultat.getBoolean("connecte");
+                boolean faceDroite = resultat.getBoolean("direction");
+
                 if(names.contains(pseudo)){
                     if(status)
-                    contexte.drawImage(this.sprite, (int) x, (int) y, null);
+                        if(!faceDroite){
+                            contexte.drawImage(this.sprite, (int) x, (int) y, null);
+                        }else{
+                            contexte.drawImage( this.sprite, (int)x + this.sprite.getWidth(null), (int)y, -this.sprite.getWidth(null), this.sprite.getHeight(null), null);
+                        }
                 }
                 
             }

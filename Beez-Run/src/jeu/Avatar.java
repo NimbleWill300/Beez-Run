@@ -27,10 +27,11 @@ import java.util.logging.Logger;
 public class Avatar {
 
     protected BufferedImage sprite;
-    private boolean toucheHaut, toucheBas, toucheDroite, toucheGauche;
+    private boolean toucheHaut, toucheBas, toucheDroite, toucheGauche, faceDroite;
     private String pseudo;
     private double x = 0;
     private double y = 0;
+    private int vitesse = 10;
 //    protected Carte laCarte;
 
     public Avatar() {
@@ -44,7 +45,7 @@ public class Avatar {
         this.toucheBas    = false;
         this.toucheDroite = false;
         this.toucheGauche = false;
-        this.pseudo = "abeille1";
+        this.pseudo = "abeille3";
         
         updateConnexion(true);
         
@@ -71,16 +72,18 @@ public class Avatar {
     public void miseAJour() {
         
         if (this.toucheHaut) {
-            y -= 5;
+            y -= vitesse;
         }
         if (this.toucheBas) {
-            y += 5;
+            y += vitesse;
         }
         if (this.toucheDroite) {
-            x += 5;
+            x += vitesse;
+            faceDroite = true;
         }
         if (this.toucheGauche) {
-            x -= 5;
+            x -= vitesse;
+            faceDroite = false;
         }
         this.toucheHaut = false;
         this.toucheBas = false;
@@ -91,10 +94,11 @@ public class Avatar {
 
             Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-            PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET x = ?, y = ? WHERE pseudo = ?");
+            PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET x = ?, y = ?, direction = ? WHERE pseudo = ?");
             requete.setDouble(1, x);
             requete.setDouble(2, y);
-            requete.setString(3, this.pseudo);
+            requete.setBoolean(3, faceDroite);
+            requete.setString(4, this.pseudo);
             int nombreDeModifications = requete.executeUpdate();
             
             requete.close();
@@ -148,6 +152,10 @@ public class Avatar {
 //        }
     }
 
+    public boolean getDirection(){
+        return faceDroite;
+    }
+    
     public void setToucheHaut(boolean etat) {
         this.toucheHaut = etat;
     }
