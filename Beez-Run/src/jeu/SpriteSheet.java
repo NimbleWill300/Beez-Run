@@ -66,7 +66,7 @@ public class SpriteSheet {
 
         int index = 0;
 
-        for(int i = 0; i < 4; i++){
+        for(int i = 0; i < 5; i++){
             for (int row = 0; row < rows; row++) {
                 for (int col = 0; col < colsPerRow[row]; col++) {
 
