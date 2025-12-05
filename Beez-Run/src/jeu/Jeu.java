@@ -14,7 +14,7 @@ public class Jeu {
     private Avatar uneAvatar;
     private Abeille uneAbeille;
 
-    public Jeu() throws IOException {
+    public Jeu(String name) throws IOException {
         try {
             this.decor = ImageIO.read(
                     getClass().getResource("../resources/background_jeu.png")
@@ -24,7 +24,7 @@ public class Jeu {
         }
         this.score = 0;
         this.uneMonster = new Monster();
-        this.uneAvatar = new Avatar();
+        this.uneAvatar = new Avatar(name);
         this.uneAbeille = new Abeille();
         System.out.print("Hello World");
     }

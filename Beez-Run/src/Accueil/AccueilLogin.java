@@ -4,6 +4,7 @@
  */
 package Accueil;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,6 +12,8 @@ import java.sql.SQLException;
 //import outils.SingletonJDBC;
 import outils.SingletonJDBC;
 import java.sql.ResultSet;
+import java.util.logging.Level;
+import jeu.FenetreDeJeu;
 
 
 
@@ -233,27 +236,34 @@ public class AccueilLogin extends javax.swing.JFrame {
                 st.setString(1, pseudo);
                 st.setString(2, mdp);
 
-                var res = st.executeQuery();
+                ResultSet res = st.executeQuery();
 
                 if (res.next()) {
                     jLabel2.setText("Connexion réussie !");
+                    String name = res.getString("pseudo");
+                    FenetreDeJeu fenetre = new FenetreDeJeu(name);
+                    fenetre.setVisible(true);
                 } else {
                     jLabel2.setText("Identifiants incorrects");
                 }
+                
 
                 st.close();
-                Salon salon = new Salon();
-                this.setVisible(false);
-                salon.setVisible(true);
-                String sqlUpdate = "UPDATE abeille SET connecte=1 WHERE pseudo=?";
-                st.setString(1, pseudo); // pseudo du joueur courant
-                st.executeUpdate();
-                st.close();
+                
+//                Salon salon = new Salon();
+//                this.setVisible(false);
+//                salon.setVisible(true);
+//                String sqlUpdate = "UPDATE abeille SET connecte=1 WHERE pseudo=?";
+//                st.setString(1, pseudo); // pseudo du joueur courant
+//                st.executeUpdate();
+//                st.close();
 
 
          } catch (SQLException ex) {
                 jLabel2.setText("Erreur SQL : " + ex.getMessage());
-            }
+            } catch (IOException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
 
     }//GEN-LAST:event_jButton3ActionPerformed
 

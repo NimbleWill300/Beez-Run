@@ -31,7 +31,7 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
     private Timer timer;
     private KeyEvent evt;
     
-    public FenetreDeJeu() throws IOException {
+    public FenetreDeJeu(String name) throws IOException {
         // initialisation de la fenetre
         this.setSize(907, 913);
         this.setResizable(false);
@@ -46,7 +46,7 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
         this.jLabel1.setIcon(new ImageIcon(framebuffer));
         this.contexte = this.framebuffer.createGraphics();
         // Creation du jeu
-        this.jeu = new Jeu();
+        this.jeu = new Jeu(name);
         // Creation du Timer qui appelle this.actionPerformed() tous les 40 ms
         this.timer = new Timer(40, this);
         this.timer.start();

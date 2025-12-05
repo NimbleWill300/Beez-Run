@@ -34,7 +34,7 @@ public final class Avatar {
     private int vitesse = 10;
 //    protected Carte laCarte;
 
-    public Avatar() {
+    public Avatar(String name) {
 //        this.laCarte = laCarte;
         try {
             this.sprite = ImageIO.read(getClass().getResource("../resources/abeille.png"));
@@ -45,7 +45,7 @@ public final class Avatar {
         this.toucheBas    = false;
         this.toucheDroite = false;
         this.toucheGauche = false;
-        this.pseudo = "abeille2";
+        this.pseudo = name;
         
         updateConnexion(true);
         
