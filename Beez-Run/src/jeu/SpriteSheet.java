@@ -19,21 +19,6 @@ public class SpriteSheet {
     private BufferedImage[][] frames;
    // private int currentFrame = 2; 
     
-    
-      public enum BeeState {
-        HIT(0),
-        DEAD(1),
-        FLY_0_START(2), // 2,3,4
-        FLY_1_START(5), // 5,6,7
-        FLY_2_START(8), // 8,9,10
-        FLY_3_START(11); // 11,12,13
-
-        public final int startIndex;
-
-        BeeState(int startIndex) {
-            this.startIndex = startIndex;
-        }
-    }
 
     public SpriteSheet() throws IOException {
 

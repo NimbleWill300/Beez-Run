@@ -104,7 +104,15 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
         if (evt.getKeyCode() == evt.VK_DOWN) {
             this.jeu.getAvatar().setToucheBas(true);
         }
-
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            this.jeu.getAvatar().takeHit();
+        }
+        if (evt.getKeyCode() == KeyEvent.VK_SPACE) {
+            this.jeu.getAvatar().heal();
+        }
+        if (evt.getKeyCode() == KeyEvent.VK_P) {
+            this.jeu.getAvatar().increasePollen();
+        }
     }
 
     @Override

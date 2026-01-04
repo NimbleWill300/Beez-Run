@@ -33,17 +33,38 @@ public class Abeille {
 
     }
 
+    public enum BeeState {
+
+        FLY_0(2),       //0 - flying with 0 pollen
+        FLY_1(5),       //1 - flying with 1 pollen
+        FLY_2(8),       //2 - flying with 2 pollen
+        FLY_3(11),      //3 - flying with 3 pollen
+        HIT(0),         //4 - hit taken
+        DEAD(1);        //5 - dead
+
+        private final int value;
+
+        BeeState(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+    
+    BeeState etat = BeeState.FLY_0;
+    
     public void miseAJour() {
          // animação de voo: usar frames 2,3,4
         tick++;
         if (tick >= ticksPerFrame) {
             tick = 0;
             currentFrame = (currentFrame + 1) % 3; // 0,1,2
-            frameIndex = 2 + currentFrame;     // 2,3,4
+//            frameIndex = 2 + currentFrame;     // 2,3,4
         }     
     }
 
-    String names = "abeille1 abeille2 abeille3 abeille4";
     
     public void rendu(Graphics2D contexte) {
 
@@ -51,30 +72,50 @@ public class Abeille {
 
             Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-            PreparedStatement requete = connexion.prepareStatement("SELECT pseudo, x, y, connecte, direction, couleur FROM abeille");
+            PreparedStatement requete = connexion.prepareStatement("SELECT pseudo, x, y, connecte, direction, couleur, etat FROM abeille");
             ResultSet resultat = requete.executeQuery();
+            
             while (resultat.next()) {
-                
                 String pseudo = resultat.getString("pseudo");
                 double x = resultat.getDouble("x");
                 double y = resultat.getDouble("y");
                 boolean status = resultat.getBoolean("connecte");
                 boolean faceDroite = resultat.getBoolean("direction");
                 String couleur = resultat.getString("couleur");
-                
-                
+                int etatAbeille = resultat.getInt("etat");
 
-                if(names.contains(pseudo)){
-                    if(status){
-                        BufferedImage sprite;
-                        
-                        sprite = SpriteSheet.getFrame(couleur, frameIndex);
+                if(status){
+                    BufferedImage sprite;
+                    switch (etatAbeille) {
+                        case 0:
+                            frameIndex = currentFrame + BeeState.FLY_0.getValue();
+                            break;
+                        case 1:
+                            frameIndex = currentFrame + BeeState.FLY_1.getValue();
+                            break;
+                        case 2:
+                            frameIndex = currentFrame + BeeState.FLY_2.getValue();
+                            break;
+                        case 3:
+                            frameIndex = currentFrame + BeeState.FLY_3.getValue();
+                            break;
+                        case 4:
+                            frameIndex = BeeState.HIT.getValue();
+                            break;
+                        case 5:
+                            frameIndex = BeeState.DEAD.getValue();
+                            break;
+                        default:
+                            frameIndex = currentFrame + BeeState.FLY_0.getValue();
+                            break;
+                    }
                     
-                        if(!faceDroite){
-                            contexte.drawImage(sprite, (int) x, (int) y, null);
-                        }else{
-                            contexte.drawImage(sprite, (int)x + sprite.getWidth(null), (int)y, -sprite.getWidth(null), sprite.getHeight(null), null);
-                        }
+                    sprite = SpriteSheet.getFrame(couleur, frameIndex);
+
+                    if(!faceDroite){
+                        contexte.drawImage(sprite, (int) x, (int) y, null);
+                    }else{
+                        contexte.drawImage(sprite, (int)x + sprite.getWidth(null), (int)y, -sprite.getWidth(null), sprite.getHeight(null), null);
                     }
                 }
                 

@@ -9,10 +9,10 @@ import javax.imageio.ImageIO;
 
 public class Jeu {
     private BufferedImage decor;
-    private int score;
     private Monster uneMonster;
     private Avatar uneAvatar;
     private Abeille uneAbeille;
+    private HUD hud;
 
     public Jeu(String name) throws IOException {
         try {
@@ -22,19 +22,17 @@ public class Jeu {
         } catch (IOException ex) {
             Logger.getLogger(Jeu.class.getName()).log(Level.SEVERE, null, ex);
         }
-        this.score = 0;
         this.uneMonster = new Monster();
         this.uneAvatar = new Avatar(name);
         this.uneAbeille = new Abeille();
-        System.out.print("Hello World");
+        this.hud = new HUD(this.uneAvatar);
     }
 
     public void rendu(Graphics2D contexte) {
         contexte.drawImage(this.decor, 0, 0, null);
-        contexte.drawString("Score : " + score, 10, 20);
         this.uneMonster.rendu(contexte);
-//      this.uneAvatar.rendu(contexte);
         this.uneAbeille.rendu(contexte);
+        hud.rendu(contexte);
     }
 
     public void miseAJour() {

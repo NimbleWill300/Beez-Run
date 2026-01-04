@@ -50,7 +50,7 @@ public class AccueilLogin extends javax.swing.JFrame {
             ex.printStackTrace();
         }
         
-        if(!couleur.contains("blue")){
+        if(!couleur.contains("bleu")){
             jComboBox3.addItem("bleu");
 
         }
