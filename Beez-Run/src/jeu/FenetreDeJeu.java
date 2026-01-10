@@ -22,6 +22,13 @@ import javax.swing.Timer;
  * IMPORTANT:
  *  - La logique reste en 1280x960 (positions/collisions)
  *  - Seul l'affichage est mis à l'échelle
+ *
+ * TOUCHES:
+ *  - Flèches : bouger
+ *  - ENTER   : takeHit()
+ *  - P       : increasePollen()
+ *  - H       : heal()
+ *  - SPACE   : si game over -> resetGame()
  */
 public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener {
 
@@ -35,7 +42,6 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
     private BufferedImage framebuffer;
     private Graphics2D fbG;
     private Sound bgm;
-
 
     private JPanel panel;
     private Jeu jeu;
@@ -102,11 +108,11 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
 
         // -------- Jeu --------
         this.jeu = new Jeu(name);
-        
+
+        // -------- Musique de fond --------
         this.bgm = new Sound();
         this.bgm.playLoopFromResource("/resources/sound_background_loop.wav");
-        this.bgm.setVolume(0.35f); // ajuste como quiser (0.0 a 1.0)
-
+        this.bgm.setVolume(0.35f); // 0.0 a 1.0
 
         // -------- Timer (boucle de jeu ~25 FPS) --------
         this.timer = new Timer(40, this);
@@ -117,7 +123,7 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
         this.setFocusable(true);
         this.requestFocusInWindow();
 
-        // -------- Recalculer scale si on change de taille (utile en fullscreen / multi-écran) --------
+        // -------- Recalculer scale si on change de taille --------
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -131,11 +137,18 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
             public void windowClosing(WindowEvent e) {
                 System.out.println("Fermeture de la fenêtre...");
 
-                FenetreDeJeu.this.jeu.getAvatar().updateConnexion(false);
-                FenetreDeJeu.this.timer.stop();
-                if (FenetreDeJeu.this.bgm != null) {
-                 FenetreDeJeu.this.bgm.stop();
+                try {
+                    FenetreDeJeu.this.jeu.getAvatar().updateConnexion(false);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
+
+                FenetreDeJeu.this.timer.stop();
+
+                if (FenetreDeJeu.this.bgm != null) {
+                    FenetreDeJeu.this.bgm.stop();
+                }
+
                 dispose();
             }
         });
@@ -169,7 +182,7 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
     @Override
     public void actionPerformed(ActionEvent e) {
 
-        // 1) Update logique
+        // 1) Update logique (le Jeu ignore tout si terminé)
         this.jeu.miseAJour();
 
         // 2) Render dans le framebuffer logique 1280x960
@@ -188,6 +201,15 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
 
     @Override
     public void keyPressed(KeyEvent evt) {
+
+        
+        if (this.jeu.isFinished()) {
+            if (evt.getKeyCode() == KeyEvent.VK_SPACE) {
+                this.jeu.resetGame();
+            }
+            return; // ignore autres touches pendant win/lose
+        }
+
         switch (evt.getKeyCode()) {
             case KeyEvent.VK_RIGHT:
                 this.jeu.getAvatar().setToucheDroite(true);
@@ -204,12 +226,16 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
             case KeyEvent.VK_ENTER:
                 this.jeu.getAvatar().takeHit();
                 break;
-            case KeyEvent.VK_SPACE:
+
+            
+            case KeyEvent.VK_H:
                 this.jeu.getAvatar().heal();
                 break;
+
             case KeyEvent.VK_P:
                 this.jeu.getAvatar().increasePollen();
                 break;
+
             case KeyEvent.VK_ESCAPE:
                 // option: quitter fullscreen rapidement
                 // dispose();
@@ -219,6 +245,9 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
 
     @Override
     public void keyReleased(KeyEvent evt) {
+        
+        if (this.jeu.isFinished()) return;
+
         switch (evt.getKeyCode()) {
             case KeyEvent.VK_RIGHT:
                 this.jeu.getAvatar().setToucheDroite(false);
@@ -236,13 +265,15 @@ public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener 
     }
 
     public void terminer() {
-        this.jeu.getAvatar().updateConnexion(false);
+        try {
+            this.jeu.getAvatar().updateConnexion(false);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         this.timer.stop();
         if (this.bgm != null) this.bgm.stop();
     }
 
-    // (optionnel) si um dia você precisar converter clique do mouse para coordenada do jogo:
-    public double getScale() { return scale; }
-    public int getOffsetX() { return offsetX; }
-    public int getOffsetY() { return offsetY; }
+
 }

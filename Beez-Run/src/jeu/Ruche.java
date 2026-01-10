@@ -21,6 +21,10 @@ public class Ruche {
     // para não consultar o banco a cada frame
     private int tick = 0;
     private final int ticksPerDB = 10; // a cada 10 updates (~0.4s se seu Timer é 40ms)
+    
+    public static final int W = 128;
+    public static final int H = 128;
+
 
     public Ruche() throws IOException {
         // coloque a imagem em src/resources/beehive.png

@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import outils.SingletonJDBC;
+import java.util.List;
 
 public final class Avatar {
 
@@ -29,18 +30,25 @@ public final class Avatar {
     private int damageDelay = 0;
     private final int delay = 15;
 
-    // -------- Référence carte --------
+    // -------- Références --------
     private final Carte carte;
+    private final List<Fleur> fleurs;
+    private final Ruche ruche; // ✅ colmeia
 
-    // -------- Hitbox (ajuste si besoin) --------
-    // Sprite tile = 64x64, on prend une hitbox plus petite pour éviter "accrocher" partout
+    // -------- Hitbox --------
     private static final int HIT_W = 32;
     private static final int HIT_H = 32;
-    private static final int HIT_OX = 16;  // offset à partir de x
-    private static final int HIT_OY = 30;  // offset à partir de y
+    private static final int HIT_OX = 16;
+    private static final int HIT_OY = 30;
 
-    public Avatar(String name, Carte carte) {
+    // -------- Cooldown depósito --------
+    private long lastDepositAttemptMs = 0;
+    private static final long DEPOSIT_COOLDOWN_MS = 350;
+
+    public Avatar(String name, Carte carte, List<Fleur> fleurs, Ruche ruche) {
         this.carte = carte;
+        this.fleurs = fleurs;
+        this.ruche = ruche;
         this.pseudo = name;
 
         updateConnexion(true);
@@ -60,6 +68,7 @@ public final class Avatar {
                 this.pollen = resultat.getInt("qnt_pollen");
                 this.etat = resultat.getInt("etat");
             }
+            resultat.close();
             requete.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -89,6 +98,7 @@ public final class Avatar {
                 this.pollen = resultat.getInt("qnt_pollen");
                 this.etat = resultat.getInt("etat");
             }
+            resultat.close();
             requete.close();
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -122,7 +132,6 @@ public final class Avatar {
             if (!collidesAt(nx, y)) {
                 x = nx;
             } else {
-                // option: pousser doucement pour éviter "coller"
                 x = pushOutX(x, nx, y);
             }
 
@@ -132,6 +141,12 @@ public final class Avatar {
             } else {
                 y = pushOutY(y, ny, x);
             }
+
+            // ✅ Interaction com flor (depois do movimento)
+            checkFlowerPickup();
+
+            // ✅ Entrega na colmeia (depois do movimento)
+            checkHiveDeposit();
 
             // reset (comme ton original)
             toucheHaut = false;
@@ -168,6 +183,124 @@ public final class Avatar {
     }
 
     // ============================================================
+    // Interaction Fleur (pickup)
+    // ============================================================
+    private void checkFlowerPickup() {
+        if (fleurs == null) return;
+        if (etat == 5) return; // morto
+        if (pollen == 3) return;
+
+        double ax1 = x + HIT_OX;
+        double ay1 = y + HIT_OY;
+        double ax2 = ax1 + HIT_W;
+        double ay2 = ay1 + HIT_H;
+
+        for (Fleur f : fleurs) {
+            if (f == null) continue;
+            if (f.getEtat() != 1) continue; // sem polen
+
+            double fx1 = f.getX();
+            double fy1 = f.getY();
+            double fw = Fleur.W; // ✅ precisa existir em Fleur
+            double fh = Fleur.H; // ✅ precisa existir em Fleur
+
+            boolean overlap = ax1 < fx1 + fw && ax2 > fx1 && ay1 < fy1 + fh && ay2 > fy1;
+            if (!overlap) continue;
+
+            if (f.tryCollect()) {
+                pollen = Math.min(3, pollen + 1);
+                etat = pollen;
+
+                try {
+                    Connection connexion = SingletonJDBC.getInstance().getConnection();
+                    PreparedStatement requete = connexion.prepareStatement(
+                            "UPDATE abeille SET qnt_pollen = ? WHERE pseudo = ?"
+                    );
+                    requete.setInt(1, pollen);
+                    requete.setString(2, pseudo);
+                    requete.executeUpdate();
+                    requete.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+                return; // só 1 flor por frame
+            }
+        }
+    }
+
+    // ============================================================
+    // Interaction Ruche (deposit)
+    // ============================================================
+    private void checkHiveDeposit() {
+        if (ruche == null) return;
+        if (etat == 5) return;     // morto
+        if (pollen != 3) return;   // só entrega com 3
+
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - lastDepositAttemptMs < DEPOSIT_COOLDOWN_MS) return;
+        lastDepositAttemptMs = nowMs;
+
+        // hitbox do avatar
+        double ax1 = x + HIT_OX;
+        double ay1 = y + HIT_OY;
+        double ax2 = ax1 + HIT_W;
+        double ay2 = ay1 + HIT_H;
+
+        // hitbox da ruche
+        double hx1 = ruche.getX();
+        double hy1 = ruche.getY();
+        double hw = Ruche.W; // ✅ precisa existir em Ruche
+        double hh = Ruche.H; // ✅ precisa existir em Ruche
+
+        boolean overlap = ax1 < hx1 + hw && ax2 > hx1 && ay1 < hy1 + hh && ay2 > hy1;
+        if (!overlap) return;
+
+        // ✅ operação atômica no DB: incrementa score e zera pólen do jogador
+        Connection c = null;
+        try {
+            c = SingletonJDBC.getInstance().getConnection();
+            c.setAutoCommit(false);
+
+            // 1) Tenta zerar pollen APENAS se ainda estiver 3 (evita double deposit)
+            PreparedStatement stBee = c.prepareStatement(
+                    "UPDATE abeille SET qnt_pollen = 0 WHERE pseudo = ? AND qnt_pollen = 3"
+            );
+            stBee.setString(1, pseudo);
+            int beeUpdated = stBee.executeUpdate();
+            stBee.close();
+
+            if (beeUpdated == 0) {
+                c.rollback();
+                c.setAutoCommit(true);
+                return;
+            }
+
+            // 2) Soma no score da colmeia (id = 1)
+            PreparedStatement stHive = c.prepareStatement(
+                    "UPDATE ruche SET score = score + 3 WHERE id = 1"
+            );
+            stHive.executeUpdate();
+            stHive.close();
+
+            c.commit();
+            c.setAutoCommit(true);
+
+            // atualiza local
+            pollen = 0;
+            etat = pollen;
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            if (c != null) {
+                try {
+                    c.rollback();
+                    c.setAutoCommit(true);
+                } catch (SQLException ignored) {}
+            }
+        }
+    }
+
+    // ============================================================
     // COLLISIONS (4 coins hitbox)
     // ============================================================
     private boolean collidesAt(double newX, double newY) {
@@ -177,14 +310,12 @@ public final class Avatar {
         double bottom = newY + HIT_OY + HIT_H - 1;
 
         return carte.isSolidPixel(left, top)
-            || carte.isSolidPixel(right, top)
-            || carte.isSolidPixel(left, bottom)
-            || carte.isSolidPixel(right, bottom);
+                || carte.isSolidPixel(right, top)
+                || carte.isSolidPixel(left, bottom)
+                || carte.isSolidPixel(right, bottom);
     }
 
-    // Si tu bloques en X, on tente de sortir un peu (optionnel)
     private double pushOutX(double oldX, double targetX, double yFixed) {
-        // on avance/recul 1px à la fois vers targetX jusqu'à collision, puis on revient
         double step = (targetX > oldX) ? 1 : -1;
         double xTest = oldX;
         while (xTest != targetX) {
@@ -212,11 +343,9 @@ public final class Avatar {
         return yTest;
     }
 
-    // Empêche de spawn dans un mur (simple)
     private void resolveIfSpawnInWall() {
         if (!collidesAt(x, y)) return;
 
-        // essaie de trouver un spot proche (petite recherche)
         for (int r = 0; r < 10; r++) {
             for (int dy = -r; dy <= r; dy++) {
                 for (int dx = -r; dx <= r; dx++) {
@@ -230,7 +359,6 @@ public final class Avatar {
                 }
             }
         }
-        // sinon, laisse tel quel (debug)
     }
 
     // ============================================================

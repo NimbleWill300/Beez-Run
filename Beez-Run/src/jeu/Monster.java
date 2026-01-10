@@ -234,10 +234,25 @@ public class Monster {
         }
     }
 
-    public void lancer() {
-        this.x_frelon = 50;
-        this.y_frelon = 50;
+    public void spawnAt(double x, double y) {
+    this.x_frelon = x;
+    this.y_frelon = y;
+    this.etat = 0;
+
+    try {
+        Connection c = SingletonJDBC.getInstance().getConnection();
+        PreparedStatement st = c.prepareStatement(
+            "UPDATE frelon SET x = ?, y = ?, etat = 0 WHERE nom = ?"
+        );
+        st.setDouble(1, x);
+        st.setDouble(2, y);
+        st.setString(3, "frelon2");
+        st.executeUpdate();
+        st.close();
+    } catch (SQLException e) {
+        e.printStackTrace();
     }
+}
 
     public double getX() { return x_frelon; }
     public double getY() { return y_frelon; }

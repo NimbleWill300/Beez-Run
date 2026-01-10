@@ -1,47 +1,232 @@
 package jeu;
 
+import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import javax.imageio.ImageIO;
+import outils.SingletonJDBC;
 
 public class Jeu {
+
+    public enum GameState { RUNNING, WIN, LOSE }
+
+    private GameState gameState = GameState.RUNNING;
+
     private final Carte carte;
     private final Monster uneMonster;
-    private final Avatar uneAvatar;
     private final Abeille uneAbeille;
     private final Ruche uneRuche;
     private final HUD hud;
-    private final Fleur uneFleur;
 
+    private final List<Fleur> fleurs;
+    private final Avatar uneAvatar;
+
+    private final BufferedImage winImg;
+    private final BufferedImage loseImg;
+
+
+    private static final double FRELON_SPAWN_X = 350;
+    private static final double FRELON_SPAWN_Y = 700;
 
     public Jeu(String name) throws IOException {
         this.carte = new Carte();
         this.uneMonster = new Monster();
-        this.uneAvatar = new Avatar(name, this.carte);
-        this.uneFleur = new Fleur(); 
         this.uneAbeille = new Abeille();
         this.uneRuche = new Ruche();
-        this.hud = new HUD(this.uneAvatar);
-    }
 
-    public void rendu(Graphics2D contexte) {
-        this.carte.rendu(contexte);
-        this.uneMonster.rendu(contexte);
-        this.uneRuche.rendu(contexte);
-        this.uneFleur.rendu(contexte);
-        this.uneAbeille.rendu(contexte); 
-        this.hud.rendu(contexte);
+       
+        this.fleurs = new ArrayList<>();
+        SpriteSheetFleur sharedSheet = new SpriteSheetFleur();
+
+        for (int i = 1; i <= 6; i++) {
+           this.fleurs.add(new Fleur(i, sharedSheet));
+         }
+    
+
+        this.uneAvatar = new Avatar(name, this.carte, this.fleurs, this.uneRuche);
+
+        this.hud = new HUD(this.uneAvatar);
+
+        this.winImg  = ImageIO.read(getClass().getResource("/resources/gamewin.png"));
+        this.loseImg = ImageIO.read(getClass().getResource("/resources/gamelost.png"));
+
+        forceFrelonSpawnDB(FRELON_SPAWN_X, FRELON_SPAWN_Y);
     }
 
     public void miseAJour() {
-        this.uneRuche.miseAJour(); 
-        this.uneMonster.miseAJour();
-        this.uneAvatar.miseAJour();
-        this.uneAbeille.miseAJour();
-        this.uneFleur.miseAJour();
+        if (gameState != GameState.RUNNING) return;
 
+        uneRuche.miseAJour();
+        for (Fleur f : fleurs) f.miseAJour();
+
+        uneMonster.miseAJour();
+        uneAvatar.miseAJour();
+        uneAbeille.miseAJour();
+
+        checkEndGame();
+    }
+
+    public void rendu(Graphics2D g) {
+        carte.rendu(g);
+        uneRuche.rendu(g);
+        for (Fleur f : fleurs) f.rendu(g);
+        uneMonster.rendu(g);
+        uneAbeille.rendu(g);
+        hud.rendu(g);
+
+        if (gameState == GameState.WIN) {
+            g.drawImage(winImg, 0, 0, null);
+            drawPressSpace(g);
+        } else if (gameState == GameState.LOSE) {
+            g.drawImage(loseImg, 0, 0, null);
+            drawPressSpace(g);
+        }
+    }
+
+    private void drawPressSpace(Graphics2D g) {
+        g.setFont(new Font("Arial", Font.BOLD, 28));
+        g.setColor(java.awt.Color.BLACK);
+        String msg = "Press SPACE to play again";
+        int x = 1280/2 - g.getFontMetrics().stringWidth(msg)/2;
+        int y = 960 - 80;
+        g.drawString(msg, x, y);
+    }
+
+    private void checkEndGame() {
+        if (uneRuche.getScore() >= 36) {
+            gameState = GameState.WIN;
+            return;
+        }
+
+        if (todasAbelhasConectadasMortas()) {
+            gameState = GameState.LOSE;
+        }
+    }
+
+    private boolean todasAbelhasConectadasMortas() {
+        try {
+            Connection c = SingletonJDBC.getInstance().getConnection();
+            PreparedStatement st = c.prepareStatement(
+                "SELECT COUNT(*) AS vivos FROM abeille WHERE connecte = 1 AND pv > 0"
+            );
+            ResultSet rs = st.executeQuery();
+            int vivos = 0;
+            if (rs.next()) vivos = rs.getInt("vivos");
+            rs.close();
+            st.close();
+            return vivos == 0;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean isFinished() {
+        return gameState != GameState.RUNNING;
     }
 
     public Avatar getAvatar() { return uneAvatar; }
 
-    public Carte getCarte() { return carte; }
+    // ============================================================
+    // RESET GAME (SPACE)
+    // ============================================================
+    public void resetGame() {
+        try {
+            Connection c = SingletonJDBC.getInstance().getConnection();
+
+            // 1) reset RUche: zera score
+            PreparedStatement stR = c.prepareStatement(
+                "UPDATE ruche SET score = 0 WHERE id = 1"
+            );
+            stR.executeUpdate();
+            stR.close();
+
+            // 2) reset FLORES: todas com pólen e next_available_at válido (NOT NULL)
+            PreparedStatement stF = c.prepareStatement(
+                "UPDATE fleur SET etat = 1, next_available_at = NOW() WHERE id BETWEEN 1 AND 6"
+            );
+            stF.executeUpdate();
+            stF.close();
+
+            // 3) reset ABELHAS: perto da colmeia, sem pólen, vivas
+            double rx = 0, ry = 0;
+            PreparedStatement stPos = c.prepareStatement("SELECT x, y FROM ruche WHERE id = 1");
+            ResultSet rs = stPos.executeQuery();
+            if (rs.next()) {
+                rx = rs.getDouble("x");
+                ry = rs.getDouble("y");
+            }
+            rs.close();
+            stPos.close();
+
+            PreparedStatement stB = c.prepareStatement(
+                "UPDATE abeille " +
+                "SET x = CASE pseudo " +
+                "  WHEN (SELECT pseudo FROM abeille WHERE connecte=1 ORDER BY pseudo LIMIT 1 OFFSET 0) THEN ? " +
+                "  WHEN (SELECT pseudo FROM abeille WHERE connecte=1 ORDER BY pseudo LIMIT 1 OFFSET 1) THEN ? " +
+                "  WHEN (SELECT pseudo FROM abeille WHERE connecte=1 ORDER BY pseudo LIMIT 1 OFFSET 2) THEN ? " +
+                "  WHEN (SELECT pseudo FROM abeille WHERE connecte=1 ORDER BY pseudo LIMIT 1 OFFSET 3) THEN ? " +
+                "  ELSE x END, " +
+                "y = CASE pseudo " +
+                "  WHEN (SELECT pseudo FROM abeille WHERE connecte=1 ORDER BY pseudo LIMIT 1 OFFSET 0) THEN ? " +
+                "  WHEN (SELECT pseudo FROM abeille WHERE connecte=1 ORDER BY pseudo LIMIT 1 OFFSET 1) THEN ? " +
+                "  WHEN (SELECT pseudo FROM abeille WHERE connecte=1 ORDER BY pseudo LIMIT 1 OFFSET 2) THEN ? " +
+                "  WHEN (SELECT pseudo FROM abeille WHERE connecte=1 ORDER BY pseudo LIMIT 1 OFFSET 3) THEN ? " +
+                "  ELSE y END, " +
+                "qnt_pollen = 0, etat = 0, pv = 5 " +
+                "WHERE connecte = 1"
+            );
+
+            // offsets X
+            stB.setDouble(1, rx + 20);
+            stB.setDouble(2, rx + 80);
+            stB.setDouble(3, rx + 20);
+            stB.setDouble(4, rx + 80);
+
+            // offsets Y
+            stB.setDouble(5, ry + 40);
+            stB.setDouble(6, ry + 40);
+            stB.setDouble(7, ry + 100);
+            stB.setDouble(8, ry + 100);
+
+            stB.executeUpdate();
+            stB.close();
+
+            // 4) reset FRELON: volta para (350, 700)
+            forceFrelonSpawnDB(FRELON_SPAWN_X, FRELON_SPAWN_Y);
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        gameState = GameState.RUNNING;
+
+        // (opcional) força atualizar objetos locais imediatamente
+        uneRuche.miseAJour();
+        for (Fleur f : fleurs) f.miseAJour();
+        // uneMonster vai ler do DB no próximo miseAJour() dele
+    }
+
+    // ============================================================
+    // HELPER: spawn do frelon via DB (fonte de verdade)
+    // ============================================================
+    private void forceFrelonSpawnDB(double x, double y) {
+        try {
+            Connection c = SingletonJDBC.getInstance().getConnection();
+            PreparedStatement stM = c.prepareStatement(
+                "UPDATE frelon SET x = ?, y = ?, etat = 0 WHERE nom = ?"
+            );
+            stM.setDouble(1, x);
+            stM.setDouble(2, y);
+            stM.setString(3, "frelon2");
+            stM.executeUpdate();
+            stM.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
 }
