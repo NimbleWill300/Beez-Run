@@ -33,6 +33,7 @@ public class Salon extends javax.swing.JFrame implements ActionListener {
      */
   public Salon(String name) {
             initComponents();
+            setLocationRelativeTo(null);
             this.name = name ;
             this.timer = new Timer(1000, this);
             this.timer.start();

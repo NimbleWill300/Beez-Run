@@ -28,6 +28,7 @@ public class AccueilLogin extends javax.swing.JFrame {
     public AccueilLogin() {
         String couleur = "";
         initComponents();
+        setLocationRelativeTo(null);
         jComboBox3.removeAllItems();  // vide les "Item 1, Item 2..."
         
        
