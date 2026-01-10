@@ -17,6 +17,8 @@ public class Monster {
 
     protected BufferedImage sprite;
     protected double x_frelon, y_frelon;
+    private int direction = 0;
+    private int spriteSize = 100;
 
     protected int squareSizeMax = 400;
     protected int squareSizeMin = 50;
@@ -49,6 +51,7 @@ public class Monster {
     }
 
     public void miseAJour() {
+        double x = x_frelon;
         // update frelon
         try {
             Connection connexion = SingletonJDBC.getInstance().getConnection();
@@ -70,26 +73,12 @@ public class Monster {
             ex.printStackTrace();
         }
         
-        
         if(etat == 1){
             if(damageDelay > 0){
                 damageDelay -= 1;
                 etat = 1;
             }else{
                 etat = 0;
-                try {
-                    Connection connexion = SingletonJDBC.getInstance().getConnection();
-
-                    PreparedStatement requete = connexion.prepareStatement("UPDATE frelon SET etat = ? WHERE nom = ?");
-                    requete.setInt(1, etat);
-                    requete.setString(2, "frelon2");
-
-                    requete.executeUpdate();
-                    requete.close();
-
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
             }
         }else{
             // resetar valores de busca
@@ -125,19 +114,6 @@ public class Monster {
                                 if(etat == 0){
                                     damageDelay = delay;
                                     etat = 1;
-                                    try {
-                                        Connection connexion2 = SingletonJDBC.getInstance().getConnection();
-
-                                        PreparedStatement requete2 = connexion2.prepareStatement("UPDATE frelon SET etat = ? WHERE nom = ?");
-                                        requete2.setInt(1, etat);
-                                        requete2.setString(2, "frelon2");
-
-                                        requete2.executeUpdate();
-                                        requete2.close();
-
-                                    } catch (SQLException ex) {
-                                        ex.printStackTrace();
-                                    }
                                 }
 
                                 PreparedStatement requete1 = connexion.prepareStatement("UPDATE abeille SET etat = ? WHERE pseudo = ?");
@@ -189,19 +165,22 @@ public class Monster {
                     }
                 }
             }
+            if(x_frelon < x){
+                direction = 0;
+            }else if(x_frelon > x){
+                direction = 1;
+            }
         }
-        updateFrame();
-    }
-
-    public void rendu(Graphics2D contexte) {
-
+        
         try {
             Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-            PreparedStatement requete = connexion.prepareStatement("UPDATE frelon SET x = ?, y = ? WHERE nom = ?");
+            PreparedStatement requete = connexion.prepareStatement("UPDATE frelon SET x = ?, y = ?, etat = ?, direction = ? WHERE nom = ?");
             requete.setDouble(1, x_frelon);
             requete.setDouble(2, y_frelon);
-            requete.setString(3, "frelon2");
+            requete.setDouble(3, etat);
+            requete.setDouble(4, direction);
+            requete.setString(5, "frelon2");
 
             requete.executeUpdate();
             requete.close();
@@ -209,8 +188,16 @@ public class Monster {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+        
+        updateFrame();
+    }
 
-        contexte.drawImage(this.sprite, (int) x_frelon, (int) y_frelon, null);
+    public void rendu(Graphics2D contexte) {
+        if(direction == 1){
+            contexte.drawImage(this.sprite, (int) x_frelon + spriteSize, (int) y_frelon, -spriteSize, spriteSize, null);
+        }else{
+            contexte.drawImage(this.sprite, (int) x_frelon, (int) y_frelon, null);
+        }
     }
     
     private void updateFrame(){
