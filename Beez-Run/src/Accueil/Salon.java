@@ -6,11 +6,13 @@ package Accueil;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import javax.swing.Timer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.logging.Level;
 import outils.SingletonJDBC;
 import javax.swing.JOptionPane;
 
@@ -21,21 +23,20 @@ import javax.swing.JOptionPane;
 public class Salon extends javax.swing.JFrame implements ActionListener {
     
     private Timer timer;
+    private static String name = "";
+ 
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Salon.class.getName());
 
     /**
      * Creates new form Salon
      */
-    public Salon() {
-        initComponents();
-        
-        
-        this.timer = new Timer(1000, this);
-        this.timer.start();
-        
-        
-    }
+  public Salon(String name) {
+            initComponents();
+            this.name = name ;
+            this.timer = new Timer(1000, this);
+            this.timer.start();
+        }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -46,33 +47,51 @@ public class Salon extends javax.swing.JFrame implements ActionListener {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        panel1 = new java.awt.Panel();
+        jCheckBoxMenuItem1 = new javax.swing.JCheckBoxMenuItem();
+        jLabel2 = new javax.swing.JLabel();
         jTextField1 = new javax.swing.JTextField();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+
+        javax.swing.GroupLayout panel1Layout = new javax.swing.GroupLayout(panel1);
+        panel1.setLayout(panel1Layout);
+        panel1Layout.setHorizontalGroup(
+            panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+        panel1Layout.setVerticalGroup(
+            panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+
+        jCheckBoxMenuItem1.setSelected(true);
+        jCheckBoxMenuItem1.setText("jCheckBoxMenuItem1");
+
+        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/image-salon.png"))); // NOI18N
+        jLabel2.setText("jLabel2");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setPreferredSize(new java.awt.Dimension(907, 913));
+        getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
+        jTextField1.setFont(new java.awt.Font("Sitka Text", 3, 18)); // NOI18N
         jTextField1.setText("En attente...");
         jTextField1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextField1ActionPerformed(evt);
             }
         });
+        getContentPane().add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 450, 300, 90));
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(106, 106, 106)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 155, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(139, Short.MAX_VALUE))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(115, 115, 115)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(163, Short.MAX_VALUE))
-        );
+        jLabel1.setFont(new java.awt.Font("Sitka Text", 3, 18)); // NOI18N
+        jLabel1.setText("Merci pour votre patience :) ");
+        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 720, -1, -1));
+
+        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/image-salon.png"))); // NOI18N
+        jLabel3.setText("jLabel3");
+        jLabel3.setPreferredSize(new java.awt.Dimension(940, 550));
+        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(-330, -10, 1580, 1050));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -84,66 +103,73 @@ public class Salon extends javax.swing.JFrame implements ActionListener {
     /**
      * @param args the command line arguments
      */
-//    public static void main(String args[]) {
-//        /* Set the Nimbus look and feel */
-//        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-//        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-//         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-//         */
-//        try {
-//            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-//                if ("Nimbus".equals(info.getName())) {
-//                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-//                    break;
-//                }
-//            }
-//        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-//            logger.log(java.util.logging.Level.SEVERE, null, ex);
-//        }
-//        //</editor-fold>
-//
-//        /* Create and display the form */
-//        java.awt.EventQueue.invokeLater(() -> new Salon().setVisible(true));
-//    }
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> new Salon(Salon.name).setVisible(true));
+
+    }
 
     @Override
     public void actionPerformed(ActionEvent e) {
   
-                try {
-                    Connection connexion = SingletonJDBC.getInstance().getConnection();
-                    String sql = "SELECT COUNT(*) AS nbJoueurs FROM abeille WHERE connecte=1";
-                    PreparedStatement st = connexion.prepareStatement(sql);
-                    ResultSet rs = st.executeQuery();
+                    try {
+                             Connection connexion = SingletonJDBC.getInstance().getConnection();
+                             String sql = "SELECT COUNT(*) AS nbJoueurs FROM abeille WHERE connecte=1";
+                             PreparedStatement st = connexion.prepareStatement(sql);
+                             ResultSet rs = st.executeQuery();
 
-                    int nbJoueurs = 0;
-                    if(rs.next()) {
-                        nbJoueurs = rs.getInt("nbJoueurs");
-                    }
+                             int nbJoueurs = 0;
+                             if (rs.next()) {
+                                 nbJoueurs = rs.getInt("nbJoueurs");
+                             }
 
-                    jTextField1.setText("Joueurs en attente : " + nbJoueurs + "/4");
+                             jTextField1.setText("Joueurs en attente : " + nbJoueurs + "/4");
 
-                    if(nbJoueurs >= 4) {
-                        timer.stop();
-                        JOptionPane.showMessageDialog(this, "4 joueurs connectés ! Le jeu va commencer.");
+//                             if (nbJoueurs >= 4) {
+                                 timer.stop();
+                                 JOptionPane.showMessageDialog(this, "4 joueurs connectés ! Le jeu va commencer.");
 
-                        // Ici tu peux lancer la fenêtre du jeu
-                        Jeu jeu = new Jeu();  // supposons que tu as une classe Jeu
-                        this.setVisible(false);
-                        jeu.setVisible(true);
-                    }
+                                 // Lancer la fenêtre du jeu 
+                                 jeu.FenetreDeJeu fen = new jeu.FenetreDeJeu(this.name);
+                                 this.setVisible(false);
+                                 fen.setVisible(true);
+//                             }
 
-                    rs.close();
-                    st.close();
+                             rs.close();
+                             st.close();
 
-                } catch(SQLException ex) {
-                    jTextField1.setText("Erreur SQL : " + ex.getMessage());
-                }
+                         } catch (SQLException ex) {
+                             jTextField1.setText("Erreur SQL : " + ex.getMessage());
+                         } catch (IOException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
 }
-
-        
-    }
-
+    
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBoxMenuItem jCheckBoxMenuItem1;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JTextField jTextField1;
+    private java.awt.Panel panel1;
     // End of variables declaration//GEN-END:variables
+
 }

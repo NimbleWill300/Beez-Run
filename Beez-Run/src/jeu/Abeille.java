@@ -22,7 +22,7 @@ public class Abeille {
     private int currentFrame = 0;   // 0,1,2 (relativo aos frames 2,3,4)
     int frameIndex = 2;
     private int tick = 0;           // contador de updates
-    private final int ticksPerFrame = 5; // ajusta velocidade da animação
+    private final int ticksPerFrame = 2; // ajusta velocidade da animação
 
 //   (Carte laCarte) dans le parentes
     public Abeille() throws IOException {

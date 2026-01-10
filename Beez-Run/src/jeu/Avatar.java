@@ -1,65 +1,56 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package jeu;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import outils.SingletonJDBC;
-import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
-import java.io.IOException;
-import java.sql.DriverManager;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-/**
- * Exemple de classe avatar
- *
- * @author guillaume.laurent
- */
 public final class Avatar {
 
-    protected BufferedImage sprite;
-    private boolean toucheHaut, toucheBas, toucheDroite, toucheGauche, faceDroite;
-    private String pseudo;
+    // -------- Input --------
+    private boolean toucheHaut, toucheBas, toucheDroite, toucheGauche;
+    private boolean faceDroite;
+
+    // -------- Identité --------
+    private final String pseudo;
+
+    // -------- Position (pixels) --------
     private double x = 0;
     private double y = 0;
+
+    // -------- Stats --------
     private int vitesse = 10;
     private int pv = 20;
     private int pollen = 0;
     private int etat = 0;
+
+    // -------- Dégâts --------
     private int damageDelay = 0;
-    private int delay = 15;
-    
-//    protected Carte laCarte;
+    private final int delay = 15;
 
-    public Avatar(String name) {
-//        this.laCarte = laCarte;
-        try {
-            this.sprite = ImageIO.read(getClass().getResource("../resources/abeille.png"));
-        } catch (IOException ex) {
-            Logger.getLogger(Avatar.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        this.toucheHaut   = false;
-        this.toucheBas    = false;
-        this.toucheDroite = false;
-        this.toucheGauche = false;
+    // -------- Référence carte --------
+    private final Carte carte;
+
+    // -------- Hitbox (ajuste si besoin) --------
+    // Sprite tile = 64x64, on prend une hitbox plus petite pour éviter "accrocher" partout
+    private static final int HIT_W = 32;
+    private static final int HIT_H = 32;
+    private static final int HIT_OX = 16;  // offset à partir de x
+    private static final int HIT_OY = 30;  // offset à partir de y
+
+    public Avatar(String name, Carte carte) {
+        this.carte = carte;
         this.pseudo = name;
-        
+
         updateConnexion(true);
-        
+
+        // -------- Charge état depuis la DB --------
         try {
-
             Connection connexion = SingletonJDBC.getInstance().getConnection();
-
-            PreparedStatement requete = connexion.prepareStatement("SELECT x, y, pv, qnt_pollen, etat FROM abeille WHERE pseudo = ?");
+            PreparedStatement requete = connexion.prepareStatement(
+                    "SELECT x, y, pv, qnt_pollen, etat FROM abeille WHERE pseudo = ?"
+            );
             requete.setString(1, this.pseudo);
             ResultSet resultat = requete.executeQuery();
             while (resultat.next()) {
@@ -69,211 +60,273 @@ public final class Avatar {
                 this.pollen = resultat.getInt("qnt_pollen");
                 this.etat = resultat.getInt("etat");
             }
-
             requete.close();
-
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
 
+        // empêche de spawn dans un mur
+        resolveIfSpawnInWall();
     }
 
+    // ============================================================
+    // UPDATE
+    // ============================================================
     public void miseAJour() {
+        int last_etat = etat;
 
-        // Get avatar's informations from database
+        // -------- Lit pv/pollen/etat du DB (interaction frelon etc.) --------
         try {
-                Connection connexion = SingletonJDBC.getInstance().getConnection();
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
+            PreparedStatement requete = connexion.prepareStatement(
+                    "SELECT pv, qnt_pollen, etat FROM abeille WHERE pseudo = ?"
+            );
+            requete.setString(1, this.pseudo);
 
-                PreparedStatement requete = connexion.prepareStatement("SELECT pv, qnt_pollen, etat FROM abeille WHERE pseudo = ?");
-                requete.setString(1, this.pseudo);
-                ResultSet resultat = requete.executeQuery();
-                while (resultat.next()) {
-                    this.pv     = resultat.getInt("pv");
-                    this.pollen = resultat.getInt("qnt_pollen");
-                    this.etat = resultat.getInt("etat");
-                }
-
-                requete.close();
-
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            ResultSet resultat = requete.executeQuery();
+            while (resultat.next()) {
+                this.pv = resultat.getInt("pv");
+                this.pollen = resultat.getInt("qnt_pollen");
+                this.etat = resultat.getInt("etat");
+            }
+            requete.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
         }
-        
-        if(pv > 0){
-            if(damageDelay > 0){
+
+        if (etat == 4 && last_etat < 4) {
+            takeHit();
+        }
+
+        if (pv > 0) {
+            if (damageDelay > 0) {
                 etat = 4;
                 damageDelay -= 1;
-            }else{
+            } else {
                 etat = pollen;
             }
-            // Update avatar's position
-            if (this.toucheHaut) {
-                this.y -= vitesse;
+
+            // ============================================================
+            // Mouvement + collisions (tilemap)
+            // ============================================================
+            double nx = x;
+            double ny = y;
+
+            if (toucheHaut) ny -= vitesse;
+            if (toucheBas)  ny += vitesse;
+            if (toucheDroite) { nx += vitesse; faceDroite = true; }
+            if (toucheGauche) { nx -= vitesse; faceDroite = false; }
+
+            // Déplacement séparé (slide)
+            // X
+            if (!collidesAt(nx, y)) {
+                x = nx;
+            } else {
+                // option: pousser doucement pour éviter "coller"
+                x = pushOutX(x, nx, y);
             }
-            if (this.toucheBas) {
-                this.y += vitesse;
+
+            // Y
+            if (!collidesAt(x, ny)) {
+                y = ny;
+            } else {
+                y = pushOutY(y, ny, x);
             }
-            if (this.toucheDroite) {
-                this.x += vitesse;
-                faceDroite = true;
-            }
-            if (this.toucheGauche) {
-                this.x -= vitesse;
-                faceDroite = false;
-            }
-            this.toucheHaut = false;
-            this.toucheBas = false;
-            this.toucheDroite = false;
-            this.toucheGauche = false;
-        }else{
+
+            // reset (comme ton original)
+            toucheHaut = false;
+            toucheBas = false;
+            toucheDroite = false;
+            toucheGauche = false;
+
+        } else {
             etat = 5;
             damageDelay = 0;
-            this.toucheHaut = false;
-            this.toucheBas = false;
-            this.toucheDroite = false;
-            this.toucheGauche = false;
+            toucheHaut = false;
+            toucheBas = false;
+            toucheDroite = false;
+            toucheGauche = false;
         }
 
-            // Send new avatar's information to database
-            try {
-
-                Connection connexion = SingletonJDBC.getInstance().getConnection();
-
-                PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET x = ?, y = ?, direction = ?, etat = ?, qnt_pollen = ? WHERE pseudo = ?");
-                requete.setDouble(1, x);
-                requete.setDouble(2, y);
-                requete.setBoolean(3, faceDroite);
-                requete.setInt(4, this.etat);
-                requete.setInt(5, this.pollen);
-                requete.setString(6, this.pseudo);
-                int nombreDeModifications = requete.executeUpdate();
-
-                requete.close();
-            } 
-            catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-            
-    }
-
-    public void rendu(Graphics2D contexte) {
-        // Abeille rendering made in Abeille.java
-    }
-
-    public boolean getDirection(){
-        return faceDroite;
-    }
-    
-    public void setToucheHaut(boolean etat) {
-        this.toucheHaut = etat;
-    }
-
-    public void setToucheBas(boolean etat) {
-        this.toucheBas = etat;
-    }
-
-    public void setToucheGauche(boolean etat) {
-        this.toucheGauche = etat;
-    }
-
-    public void setToucheDroite(boolean etat) {
-        this.toucheDroite = etat;
-    }
-    
-    public void updateConnexion(boolean var){
+        // -------- Envoie position au DB --------
         try {
-
             Connection connexion = SingletonJDBC.getInstance().getConnection();
-
-            PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET connecte = ? WHERE pseudo = ?");
-            requete.setBoolean(1, var);
-            requete.setString(2, this.pseudo);
-            int nombreDeModifications = requete.executeUpdate();
-            
+            PreparedStatement requete = connexion.prepareStatement(
+                    "UPDATE abeille SET x = ?, y = ?, direction = ?, etat = ?, qnt_pollen = ? WHERE pseudo = ?"
+            );
+            requete.setDouble(1, x);
+            requete.setDouble(2, y);
+            requete.setBoolean(3, faceDroite);
+            requete.setInt(4, this.etat);
+            requete.setInt(5, this.pollen);
+            requete.setString(6, this.pseudo);
+            requete.executeUpdate();
             requete.close();
-        } 
-        catch (SQLException ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
         }
     }
-    
-    public int getPv(){
-        return this.pv;
+
+    // ============================================================
+    // COLLISIONS (4 coins hitbox)
+    // ============================================================
+    private boolean collidesAt(double newX, double newY) {
+        double left   = newX + HIT_OX;
+        double right  = newX + HIT_OX + HIT_W - 1;
+        double top    = newY + HIT_OY;
+        double bottom = newY + HIT_OY + HIT_H - 1;
+
+        return carte.isSolidPixel(left, top)
+            || carte.isSolidPixel(right, top)
+            || carte.isSolidPixel(left, bottom)
+            || carte.isSolidPixel(right, bottom);
     }
 
-    public int getPollen(){
-        return this.pollen;
+    // Si tu bloques en X, on tente de sortir un peu (optionnel)
+    private double pushOutX(double oldX, double targetX, double yFixed) {
+        // on avance/recul 1px à la fois vers targetX jusqu'à collision, puis on revient
+        double step = (targetX > oldX) ? 1 : -1;
+        double xTest = oldX;
+        while (xTest != targetX) {
+            double next = xTest + step;
+            if (collidesAt(next, yFixed)) {
+                return xTest;
+            }
+            xTest = next;
+            if (Math.abs(xTest - targetX) < 0.5) break;
+        }
+        return xTest;
     }
-    
-    public void increasePollen(){
+
+    private double pushOutY(double oldY, double targetY, double xFixed) {
+        double step = (targetY > oldY) ? 1 : -1;
+        double yTest = oldY;
+        while (yTest != targetY) {
+            double next = yTest + step;
+            if (collidesAt(xFixed, next)) {
+                return yTest;
+            }
+            yTest = next;
+            if (Math.abs(yTest - targetY) < 0.5) break;
+        }
+        return yTest;
+    }
+
+    // Empêche de spawn dans un mur (simple)
+    private void resolveIfSpawnInWall() {
+        if (!collidesAt(x, y)) return;
+
+        // essaie de trouver un spot proche (petite recherche)
+        for (int r = 0; r < 10; r++) {
+            for (int dy = -r; dy <= r; dy++) {
+                for (int dx = -r; dx <= r; dx++) {
+                    double nx = x + dx * 5;
+                    double ny = y + dy * 5;
+                    if (!collidesAt(nx, ny)) {
+                        x = nx;
+                        y = ny;
+                        return;
+                    }
+                }
+            }
+        }
+        // sinon, laisse tel quel (debug)
+    }
+
+    // ============================================================
+    // GETTERS / INPUT
+    // ============================================================
+    public boolean getDirection() { return faceDroite; }
+
+    public void setToucheHaut(boolean etat) { this.toucheHaut = etat; }
+    public void setToucheBas(boolean etat) { this.toucheBas = etat; }
+    public void setToucheGauche(boolean etat) { this.toucheGauche = etat; }
+    public void setToucheDroite(boolean etat) { this.toucheDroite = etat; }
+
+    // ============================================================
+    // DB / GAMEPLAY
+    // ============================================================
+    public void updateConnexion(boolean var) {
+        try {
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
+            PreparedStatement requete = connexion.prepareStatement(
+                    "UPDATE abeille SET connecte = ? WHERE pseudo = ?"
+            );
+            requete.setBoolean(1, var);
+            requete.setString(2, this.pseudo);
+            requete.executeUpdate();
+            requete.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public int getPv() { return pv; }
+    public int getPollen() { return pollen; }
+
+    public void increasePollen() {
         pollen = (pollen + 1) % 4;
         try {
             Connection connexion = SingletonJDBC.getInstance().getConnection();
-
-            PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET qnt_pollen = ? WHERE pseudo = ?");
+            PreparedStatement requete = connexion.prepareStatement(
+                    "UPDATE abeille SET qnt_pollen = ? WHERE pseudo = ?"
+            );
             requete.setInt(1, pollen);
-            requete.setString(2, this.pseudo);
-            int nombreDeModifications = requete.executeUpdate();
-            
+            requete.setString(2, pseudo);
+            requete.executeUpdate();
             requete.close();
-        } 
-        catch (SQLException ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
         }
     }
-    
-    public void takeHit(){
-        if(etat < 4){
-            pv -= 1;
-            try {
-                Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-                PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET pv = ? WHERE pseudo = ?");
-                requete.setInt(1, pv);
-                requete.setString(2, this.pseudo);
-                int nombreDeModifications = requete.executeUpdate();
+    public void takeHit() {
+        pv -= 1;
 
-                requete.close();
-            } 
-            catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-            if(pv > 0){
-                damageDelay = delay;
-            }
-            try {
-                Connection connexion = SingletonJDBC.getInstance().getConnection();
+        try {
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
+            PreparedStatement requete = connexion.prepareStatement(
+                    "UPDATE abeille SET pv = ? WHERE pseudo = ?"
+            );
+            requete.setInt(1, pv);
+            requete.setString(2, pseudo);
+            requete.executeUpdate();
+            requete.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
 
-                PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET etat = ? WHERE pseudo = ?");
-                requete.setInt(1, etat);
-                requete.setString(2, this.pseudo);
-                int nombreDeModifications = requete.executeUpdate();
+        if (pv > 0) damageDelay = delay;
 
-                requete.close();
-            } 
-            catch (SQLException ex) {
-                ex.printStackTrace();
-            }
+        try {
+            Connection connexion = SingletonJDBC.getInstance().getConnection();
+            PreparedStatement requete = connexion.prepareStatement(
+                    "UPDATE abeille SET etat = ? WHERE pseudo = ?"
+            );
+            requete.setInt(1, etat);
+            requete.setString(2, pseudo);
+            requete.executeUpdate();
+            requete.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
         }
     }
-    
-    public void heal(){
-        if(pv < 5){
+
+    public void heal() {
+        if (pv < 5) {
             pv += 1;
             try {
                 Connection connexion = SingletonJDBC.getInstance().getConnection();
-
-                PreparedStatement requete = connexion.prepareStatement("UPDATE abeille SET pv = ? WHERE pseudo = ?");
+                PreparedStatement requete = connexion.prepareStatement(
+                        "UPDATE abeille SET pv = ? WHERE pseudo = ?"
+                );
                 requete.setInt(1, pv);
-                requete.setString(2, this.pseudo);
-                int nombreDeModifications = requete.executeUpdate();
-
+                requete.setString(2, pseudo);
+                requete.executeUpdate();
                 requete.close();
-            } 
-            catch (SQLException ex) {
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
         }
     }
-    
 }

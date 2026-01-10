@@ -20,9 +20,10 @@ public class Monster {
 
     protected int squareSizeMax = 400;
     protected int squareSizeMin = 50;
-    protected int vitesse = 2;
+    protected int vitesse = 5;
 
     protected double detectionRadius = 220;  // raio de detecção
+    protected double damageRadius = 20;  // raio de detecção
     protected double dist = Double.MAX_VALUE;
 
     protected double minDist = Double.MAX_VALUE;
@@ -33,7 +34,11 @@ public class Monster {
     
     private int currentFrame = 0;   // 0,1,2 (relativo aos frames 2,3,4)
     private int tick = 0;           // contador de updates
-    private final int ticksPerFrame = 5; // ajusta velocidade da animação
+    private final int ticksPerFrame = 3; // ajusta velocidade da animação
+    
+    int etat = 0;
+    private int damageDelay = 0;
+    private int delay = 30;
     
 //   (Carte laCarte) dans le parentes
 
@@ -44,27 +49,19 @@ public class Monster {
     }
 
     public void miseAJour() {
-        
-                 // animação de voo: usar frames 2,3,4
-        tick++;
-        if (tick >= ticksPerFrame) {
-            tick = 0;
-            currentFrame = (currentFrame + 1) % 3; // 0,1,2
-            int frameIndex = currentFrame;     // 2,3,4
-            this.sprite = uneSpriteSheet_frelon.getFrame(frameIndex);
-        }     
-        
+        // update frelon
         try {
             Connection connexion = SingletonJDBC.getInstance().getConnection();
 
             // 1) Carregar posição atual do frelon no banco
-            PreparedStatement requeteF = connexion.prepareStatement("SELECT x, y FROM frelon WHERE nom = ?");
+            PreparedStatement requeteF = connexion.prepareStatement("SELECT x, y, etat FROM frelon WHERE nom = ?");
             requeteF.setString(1, "frelon2");
             ResultSet resF = requeteF.executeQuery();
 
             if (resF.next()) {
                 x_frelon = resF.getDouble("x");
                 y_frelon = resF.getDouble("y");
+                etat = resF.getInt("etat");
             }
 
             requeteF.close();
@@ -72,79 +69,128 @@ public class Monster {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+        
+        
+        if(etat == 1){
+            if(damageDelay > 0){
+                damageDelay -= 1;
+                etat = 1;
+            }else{
+                etat = 0;
+                try {
+                    Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-        // resetar valores de busca
-        minDist = Double.MAX_VALUE;
-        dist = Double.MAX_VALUE;
+                    PreparedStatement requete = connexion.prepareStatement("UPDATE frelon SET etat = ? WHERE nom = ?");
+                    requete.setInt(1, etat);
+                    requete.setString(2, "frelon2");
 
-        String names = "abeille1 abeille2 abeille3 abeille4";
+                    requete.executeUpdate();
+                    requete.close();
 
-        try {
-            Connection connexion = SingletonJDBC.getInstance().getConnection();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }else{
+            // resetar valores de busca
+            minDist = Double.MAX_VALUE;
+            dist = Double.MAX_VALUE;
 
-            // 2) Procurar abelha mais próxima
-            PreparedStatement requete = connexion.prepareStatement("SELECT pseudo, x, y, connecte FROM abeille");
-            ResultSet resultat = requete.executeQuery();
+            try {
+                Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-            while (resultat.next()) {
+                // 2) Procurar abelha mais próxima
+                PreparedStatement requete = connexion.prepareStatement("SELECT pseudo, x, y, connecte, etat FROM abeille");
+                ResultSet resultat = requete.executeQuery();
 
-                String pseudo = resultat.getString("pseudo");
-                double xA = resultat.getDouble("x");
-                double yA = resultat.getDouble("y");
-                boolean connecte = resultat.getBoolean("connecte");
+                while (resultat.next()) {
 
-                // só considera abelhas da lista e conectadas
-                if (names.contains(pseudo) && connecte) {
+                    String pseudo = resultat.getString("pseudo");
+                    double xA = resultat.getDouble("x");
+                    double yA = resultat.getDouble("y");
+                    boolean connecte = resultat.getBoolean("connecte");
+                    int etat_abeille = resultat.getInt("etat");
 
-                    // distância Manhattan
-                    double dx = xA - x_frelon;
-                    double dy = yA - y_frelon;
-                    double distTmp = Math.abs(dx) + Math.abs(dy);
+                    // só considera abelhas da lista e conectadas
+                    if (connecte && etat_abeille != 5) {
 
-                    // dentro do raio de detecção?
-                    if (distTmp <= detectionRadius && distTmp < minDist) {
-                        minDist = distTmp;
-                        dist = distTmp;
-                        targetX = xA;
-                        targetY = yA;
+                        // distância Manhattan
+                        double dx = xA - x_frelon;
+                        double dy = yA - y_frelon;
+                        double distTmp = Math.abs(dx) + Math.abs(dy);
+
+                        // dentro do raio de detecção?
+                        if (distTmp <= detectionRadius && distTmp < minDist) {
+                            if(distTmp <= damageRadius){ // hits abeille
+                                if(etat == 0){
+                                    damageDelay = delay;
+                                    etat = 1;
+                                    try {
+                                        Connection connexion2 = SingletonJDBC.getInstance().getConnection();
+
+                                        PreparedStatement requete2 = connexion2.prepareStatement("UPDATE frelon SET etat = ? WHERE nom = ?");
+                                        requete2.setInt(1, etat);
+                                        requete2.setString(2, "frelon2");
+
+                                        requete2.executeUpdate();
+                                        requete2.close();
+
+                                    } catch (SQLException ex) {
+                                        ex.printStackTrace();
+                                    }
+                                }
+
+                                PreparedStatement requete1 = connexion.prepareStatement("UPDATE abeille SET etat = ? WHERE pseudo = ?");
+                                requete1.setInt(1, 4); // changes bee state to 'hit'
+                                requete1.setString(2, pseudo);
+
+                                requete1.executeUpdate();
+                                requete1.close();
+                            }
+                            minDist = distTmp;
+                            dist = distTmp;
+                            targetX = xA;
+                            targetY = yA;
+                        }
+                    }
+                }
+                requete.close();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+            // 3) MOVER — perseguir ou patrulhar
+            if(damageDelay == 0){ // Etat normal, il peut bouger
+                if (dist <= detectionRadius) {
+
+                    // perseguir abelha mais próxima
+                    double dx = targetX - x_frelon;
+                    double dy = targetY - y_frelon;
+
+                    double len = Math.sqrt(dx * dx + dy * dy);
+
+                    if (len > 0.1) {
+                        x_frelon += (dx / len) * vitesse;
+                        y_frelon += (dy / len) * vitesse;
+                    }
+
+                } else {
+                    // movimento padrão em quadrado
+                    if (y_frelon <= squareSizeMin && x_frelon < squareSizeMax) {
+                        x_frelon += vitesse;
+                    } else if (x_frelon >= squareSizeMax && y_frelon < squareSizeMax) {
+                        y_frelon += vitesse;
+                    } else if (y_frelon >= squareSizeMax && x_frelon > squareSizeMin) {
+                        x_frelon -= vitesse;
+                    } else if (x_frelon <= squareSizeMin && y_frelon > squareSizeMin) {
+                        y_frelon -= vitesse;
+                    }else{
+                        x_frelon -= vitesse;
                     }
                 }
             }
-
-            requete.close();
-
-        } catch (SQLException ex) {
-            ex.printStackTrace();
         }
-
-        // 3) MOVER — perseguir ou patrulhar
-        if (dist <= detectionRadius) {
-
-            // perseguir abelha mais próxima
-            double dx = targetX - x_frelon;
-            double dy = targetY - y_frelon;
-
-            double len = Math.sqrt(dx * dx + dy * dy);
-
-            if (len > 0.1) {
-                x_frelon += (dx / len) * vitesse;
-                y_frelon += (dy / len) * vitesse;
-            }
-
-        } else {
-            // movimento padrão em quadrado
-            if (y_frelon <= squareSizeMin && x_frelon < squareSizeMax) {
-                x_frelon += vitesse;
-            } else if (x_frelon >= squareSizeMax && y_frelon < squareSizeMax) {
-                y_frelon += vitesse;
-            } else if (y_frelon >= squareSizeMax && x_frelon > squareSizeMin) {
-                x_frelon -= vitesse;
-            } else if (x_frelon <= squareSizeMin && y_frelon > squareSizeMin) {
-                y_frelon -= vitesse;
-            }else{
-                x_frelon -= vitesse;
-            }
-        }
+        updateFrame();
     }
 
     public void rendu(Graphics2D contexte) {
@@ -165,6 +211,40 @@ public class Monster {
         }
 
         contexte.drawImage(this.sprite, (int) x_frelon, (int) y_frelon, null);
+    }
+    
+    private void updateFrame(){
+        // animação de voo: usar frames 2,3,4
+        tick++;
+        if (tick >= ticksPerFrame) {
+            tick = 0;
+            if(etat == 0){
+                currentFrame = (currentFrame + 1) % 3; // 0,1,2
+                this.sprite = uneSpriteSheet_frelon.getFrame(currentFrame);
+            }else{
+                if(damageDelay > 0){
+                    damageDelay -= 1;
+                    etat = 1;
+                    currentFrame = (currentFrame + 1) % 2; // 3, 4
+                    this.sprite = uneSpriteSheet_frelon.getFrame(currentFrame + 3);
+                }else{
+                    etat = 0;
+                    try {
+                        Connection connexion = SingletonJDBC.getInstance().getConnection();
+
+                        PreparedStatement requete = connexion.prepareStatement("UPDATE frelon SET etat = ? WHERE nom = ?");
+                        requete.setInt(1, etat);
+                        requete.setString(2, "frelon2");
+
+                        requete.executeUpdate();
+                        requete.close();
+
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        }
     }
 
     public void lancer() {

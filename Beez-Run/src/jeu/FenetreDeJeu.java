@@ -5,7 +5,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.util.EventListener;
 import java.awt.image.BufferedImage;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -13,126 +12,139 @@ import javax.swing.JLabel;
 import javax.swing.Timer;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.IOException;
 
-
 /**
- * Exemple de fenetre de jeu en utilisant uniquement des commandes
+ * Fenêtre principale du jeu
+ * Rendu en framebuffer + boucle de jeu via Timer
+ *
+ * Carte : 1280 x 960
+ * Tile   : 64 x 64
  *
  * @author guillaume.laurent
  */
 public class FenetreDeJeu extends JFrame implements ActionListener, KeyListener {
-    
+
     private BufferedImage framebuffer;
     private Graphics2D contexte;
     private JLabel jLabel1;
     private Jeu jeu;
     private Timer timer;
-    private KeyEvent evt;
-    
+
     public FenetreDeJeu(String name) throws IOException {
-        // initialisation de la fenetre
-        this.setSize(907, 913);
-        this.setResizable(false);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        // -------- Création du JLabel AVANT toute utilisation --------
         this.jLabel1 = new JLabel();
-        this.jLabel1.setPreferredSize(new java.awt.Dimension(907, 913));
+        this.jLabel1.setPreferredSize(new java.awt.Dimension(1280, 960));
+
+        // -------- Configuration de la fenêtre --------
+        this.setTitle("Beez Run");
+        this.setResizable(false);
         this.setContentPane(this.jLabel1);
         this.pack();
-        // Creation du buffer pour l’affichage du jeu et recuperation du contexte graphique
-        this.framebuffer = new BufferedImage(this.jLabel1.getWidth(), this.jLabel1.getHeight(), BufferedImage.
-        TYPE_INT_ARGB);
+        this.setLocationRelativeTo(null); // centre l'écran
+        this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+        // -------- Création du framebuffer --------
+        this.framebuffer = new BufferedImage(
+                1280,
+                960,
+                BufferedImage.TYPE_INT_ARGB
+        );
         this.jLabel1.setIcon(new ImageIcon(framebuffer));
         this.contexte = this.framebuffer.createGraphics();
-        // Creation du jeu
+
+        // -------- Création du jeu --------
         this.jeu = new Jeu(name);
-        // Creation du Timer qui appelle this.actionPerformed() tous les 40 ms
+
+        // -------- Timer (boucle de jeu ~25 FPS) --------
         this.timer = new Timer(40, this);
         this.timer.start();
+
+        // -------- Input clavier --------
         this.addKeyListener(this);
-        
+        this.setFocusable(true);
+        this.requestFocusInWindow();
+
+        // -------- Fermeture propre --------
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                System.out.println("Fenêtre en train de se fermer...");
+                System.out.println("Fermeture de la fenêtre...");
 
-                // Marca o avatar como desconectado
+                // Déconnexion propre de l'avatar
                 FenetreDeJeu.this.jeu.getAvatar().updateConnexion(false);
 
-                // Termina o jogo
-                FenetreDeJeu.this.terminer();
+                // Stoppe le timer
+                FenetreDeJeu.this.timer.stop();
 
-                System.out.println("bye bye World");
-
-                // Fecha de verdade a janela / app
-                dispose();       // fecha só a janela
-                // ou: System.exit(0); se quiser matar o programa todo
+                // Ferme la fenêtre
+                dispose();
             }
         });
     }
-    
-    // Methode appelee par le timer et qui effectue la boucle de jeu
+
+    // -------- Boucle de jeu --------
     @Override
     public void actionPerformed(ActionEvent e) {
         this.jeu.miseAJour();
         this.jeu.rendu(contexte);
         this.jLabel1.repaint();
-//        if (this.jeu.estTermine()) {
-//            this.timer.stop();
-//        }
     }
-    
-//    public static void main(String[] args) {
-//            }
 
+    // -------- Gestion clavier --------
     @Override
     public void keyTyped(KeyEvent evt) {
+        // inutilisé
     }
 
     @Override
     public void keyPressed(KeyEvent evt) {
-        if (evt.getKeyCode() == evt.VK_RIGHT) {
-            this.jeu.getAvatar().setToucheDroite(true);   
-        }
-        if (evt.getKeyCode() == evt.VK_LEFT) {
-            this.jeu.getAvatar().setToucheGauche(true);
-        }
-        if (evt.getKeyCode() == evt.VK_UP) {
-            this.jeu.getAvatar().setToucheHaut(true);   
-        }
-        if (evt.getKeyCode() == evt.VK_DOWN) {
-            this.jeu.getAvatar().setToucheBas(true);
-        }
-        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
-            this.jeu.getAvatar().takeHit();
-        }
-        if (evt.getKeyCode() == KeyEvent.VK_SPACE) {
-            this.jeu.getAvatar().heal();
-        }
-        if (evt.getKeyCode() == KeyEvent.VK_P) {
-            this.jeu.getAvatar().increasePollen();
+        switch (evt.getKeyCode()) {
+            case KeyEvent.VK_RIGHT:
+                this.jeu.getAvatar().setToucheDroite(true);
+                break;
+            case KeyEvent.VK_LEFT:
+                this.jeu.getAvatar().setToucheGauche(true);
+                break;
+            case KeyEvent.VK_UP:
+                this.jeu.getAvatar().setToucheHaut(true);
+                break;
+            case KeyEvent.VK_DOWN:
+                this.jeu.getAvatar().setToucheBas(true);
+                break;
+            case KeyEvent.VK_ENTER:
+                this.jeu.getAvatar().takeHit();
+                break;
+            case KeyEvent.VK_SPACE:
+                this.jeu.getAvatar().heal();
+                break;
+            case KeyEvent.VK_P:
+                this.jeu.getAvatar().increasePollen();
+                break;
         }
     }
 
     @Override
     public void keyReleased(KeyEvent evt) {
-        if (evt.getKeyCode() == evt.VK_RIGHT) {
-            this.jeu.getAvatar().setToucheDroite(false);
+        switch (evt.getKeyCode()) {
+            case KeyEvent.VK_RIGHT:
+                this.jeu.getAvatar().setToucheDroite(false);
+                break;
+            case KeyEvent.VK_LEFT:
+                this.jeu.getAvatar().setToucheGauche(false);
+                break;
+            case KeyEvent.VK_UP:
+                this.jeu.getAvatar().setToucheHaut(false);
+                break;
+            case KeyEvent.VK_DOWN:
+                this.jeu.getAvatar().setToucheBas(false);
+                break;
         }
-        if (evt.getKeyCode() == evt.VK_LEFT) {
-            this.jeu.getAvatar().setToucheGauche(false);
-        }
-        if (evt.getKeyCode() == evt.VK_UP) {
-            this.jeu.getAvatar().setToucheHaut(false);   
-        }
-        if (evt.getKeyCode() == evt.VK_DOWN) {
-            this.jeu.getAvatar().setToucheBas(false);
-        }
-
     }
-    
-    public void terminer(){
+
+    public void terminer() {
         this.jeu.getAvatar().updateConnexion(false);
+        this.timer.stop();
     }
 }

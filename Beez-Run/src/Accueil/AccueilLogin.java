@@ -4,7 +4,6 @@
  */
 package Accueil;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,8 +11,6 @@ import java.sql.SQLException;
 //import outils.SingletonJDBC;
 import outils.SingletonJDBC;
 import java.sql.ResultSet;
-import java.util.logging.Level;
-import jeu.FenetreDeJeu;
 
 
 
@@ -33,37 +30,52 @@ public class AccueilLogin extends javax.swing.JFrame {
         initComponents();
         jComboBox3.removeAllItems();  // vide les "Item 1, Item 2..."
         
-        try {
-            Connection connexion = SingletonJDBC.getInstance().getConnection();
+       
+//  Couleurs autorisées (tout en français, sans espaces)
+String[] toutes = {"bleu", "vert", "mauve", "rouge"};
 
-            PreparedStatement requete = connexion.prepareStatement("SELECT couleur FROM abeille");
-            ResultSet resultat = requete.executeQuery();
-            while (resultat.next()) {
-                
-                couleur = couleur + " " + resultat.getString("couleur");
-                
-            }
+//  Lire les couleurs déjà utilisées dans la table abeille
+java.util.HashSet<String> prises = new java.util.HashSet<>();
 
-            requete.close();
+try {
+                    Connection connexion = SingletonJDBC.getInstance().getConnection();
+                    PreparedStatement req = connexion.prepareStatement("SELECT couleur FROM abeille");
+                    ResultSet rs = req.executeQuery();
 
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-        
-        if(!couleur.contains("bleu")){
-            jComboBox3.addItem("bleu");
+                    while (rs.next()) {
+                        String c = rs.getString("couleur");
+                        if (c != null) {
+                            prises.add(c.trim().toLowerCase()); // ✅ normaliser
+                        }
+                    }
+                    rs.close();
+                    req.close();
 
-        }
-        if(!couleur.contains("vert")){
-            jComboBox3.addItem("vert");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
 
-        }if(!couleur.contains("mauve")){
-            jComboBox3.addItem("mauve");
-
-        }if(!couleur.contains("rouge")){
-            jComboBox3.addItem("rouge");
-
-        }
+                // Ajouter seulement les couleurs libres
+                for (String c : toutes) {
+                    if (!prises.contains(c)) {
+                        jComboBox3.addItem(c);
+                    }
+                }
+       
+//        if(!couleur.contains("blue")){
+//            jComboBox3.addItem("bleu");
+//
+//        }
+//        if(!couleur.contains("vert")){
+//            jComboBox3.addItem("vert");
+//
+//        }if(!couleur.contains("mauve")){
+//            jComboBox3.addItem("mauve");
+//
+//        }if(!couleur.contains("rouge")){
+//            jComboBox3.addItem("rouge");
+//
+//        }
 //        jComboBox3.addItem("Vert");
 //        jComboBox3.addItem("Mauve");
 //        jComboBox3.addItem("Rouge");
@@ -97,10 +109,8 @@ public class AccueilLogin extends javax.swing.JFrame {
         jPasswordField1 = new javax.swing.JPasswordField();
         jButton3 = new javax.swing.JButton();
         jButton1 = new javax.swing.JButton();
-        jLabel5 = new javax.swing.JLabel();
-        jComboBox1 = new javax.swing.JComboBox<>();
-        jComboBox2 = new javax.swing.JComboBox<>();
         jComboBox3 = new javax.swing.JComboBox<>();
+        jLabel5 = new javax.swing.JLabel();
 
         jDialog1.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -163,62 +173,65 @@ public class AccueilLogin extends javax.swing.JFrame {
         jScrollPane1.setViewportView(jTextArea1);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setMinimumSize(new java.awt.Dimension(907, 913));
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel1.setText("Bonjour");
-        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(168, 29, 82, 28));
+        jLabel1.setBackground(new java.awt.Color(255, 255, 255));
+        jLabel1.setFont(new java.awt.Font("Sitka Text", 3, 36)); // NOI18N
+        jLabel1.setText("Bonjour dans Beez-Run");
+        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(280, 290, 510, 40));
 
+        jLabel2.setFont(new java.awt.Font("Sitka Text", 3, 18)); // NOI18N
         jLabel2.setText("Connectez-vous à l'application ...");
-        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 70, 236, -1));
+        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 340, 360, -1));
 
-        jLabel3.setText("Pseudo");
-        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(6, 125, -1, -1));
+        jLabel3.setFont(new java.awt.Font("Sitka Text", 3, 18)); // NOI18N
+        jLabel3.setText("Pseudo ");
+        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 390, 80, -1));
 
+        jLabel4.setFont(new java.awt.Font("Sitka Text", 3, 18)); // NOI18N
         jLabel4.setText("Mot de passe");
-        getContentPane().add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(6, 175, -1, -1));
+        getContentPane().add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(300, 450, -1, -1));
 
+        jTextPane1.setText("abeille");
         jScrollPane2.setViewportView(jTextPane1);
 
-        getContentPane().add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 130, 150, -1));
+        getContentPane().add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 390, 150, 30));
 
-        jPasswordField1.setText("jPasswordField1");
-        getContentPane().add(jPasswordField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 172, 203, 30));
+        jPasswordField1.setText("123456");
+        getContentPane().add(jPasswordField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 440, 203, 30));
 
+        jButton3.setFont(new java.awt.Font("Sitka Text", 3, 14)); // NOI18N
         jButton3.setText("Login");
         jButton3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton3ActionPerformed(evt);
             }
         });
-        getContentPane().add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(154, 221, 73, -1));
+        getContentPane().add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 490, 100, 30));
 
+        jButton1.setFont(new java.awt.Font("Sitka Text", 3, 14)); // NOI18N
         jButton1.setText("Sign up ");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
             }
         });
-        getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(154, 250, -1, -1));
+        getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(460, 530, 100, 30));
 
-        jLabel5.setIcon(new javax.swing.ImageIcon("Z:\\Desktop\\abeille mauve 4 .png")); // NOI18N
-        jLabel5.setText("jLabel5");
-        getContentPane().add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 10, 80, 70));
-
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        jComboBox1.setName("comboCouleur"); // NOI18N
-        getContentPane().add(jComboBox1, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 130, -1, -1));
-
-        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        jComboBox2.setName("comboCouleur"); // NOI18N
-        getContentPane().add(jComboBox2, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 180, -1, -1));
-
+        jComboBox3.setFont(new java.awt.Font("Sitka Text", 3, 14)); // NOI18N
         jComboBox3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Mauve", "Blue ", "Rouge", "Vert", "Jaune" }));
         jComboBox3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBox3ActionPerformed(evt);
             }
         });
-        getContentPane().add(jComboBox3, new org.netbeans.lib.awtextra.AbsoluteConstraints(320, 130, -1, -1));
+        getContentPane().add(jComboBox3, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 390, -1, 30));
+
+        jLabel5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/image-acceuil.png"))); // NOI18N
+        jLabel5.setText("jLabel5");
+        jLabel5.setPreferredSize(new java.awt.Dimension(671, 550));
+        getContentPane().add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -10, 940, 910));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -226,44 +239,48 @@ public class AccueilLogin extends javax.swing.JFrame {
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
         // TODO add your handling code here:
         try {
-                Connection connexion = SingletonJDBC.getInstance().getConnection();
+                     Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-                String pseudo = jTextPane1.getText();
-                String mdp = new String(jPasswordField1.getPassword());
+                    String pseudo = jTextPane1.getText().trim();
+                    String mdp = new String(jPasswordField1.getPassword());
 
-                String sql = "SELECT * FROM utilisateurs WHERE pseudo=? AND motdepasse=MD5(?)";
-                PreparedStatement st = connexion.prepareStatement(sql);
-                st.setString(1, pseudo);
-                st.setString(2, mdp);
+                    if (pseudo.isEmpty() || mdp.isEmpty()) {
+                        jLabel2.setText("Pseudo et mot de passe obligatoires");
+                        return;
+                    }
 
-                ResultSet res = st.executeQuery();
+                    String sql = "SELECT * FROM utilisateurs WHERE pseudo=? AND motdepasse=MD5(?)";
+                    PreparedStatement st = connexion.prepareStatement(sql);
+                    st.setString(1, pseudo);
+                    st.setString(2, mdp);
 
-                if (res.next()) {
-                    jLabel2.setText("Connexion réussie !");
-                    String name = res.getString("pseudo");
-                    FenetreDeJeu fenetre = new FenetreDeJeu(name);
-                    fenetre.setVisible(true);
-                } else {
-                    jLabel2.setText("Identifiants incorrects");
+                    ResultSet res = st.executeQuery();
+
+                    if (res.next()) {
+                        jLabel2.setText("Connexion réussie !");
+
+                        // ✅ UPDATE connecte = 1 avec un nouveau statement
+                        String sqlUpdate = "UPDATE abeille SET connecte=1 WHERE pseudo=?";
+                        PreparedStatement stUpdate = connexion.prepareStatement(sqlUpdate);
+                        stUpdate.setString(1, pseudo);
+                        stUpdate.executeUpdate();
+                        stUpdate.close();
+
+                        // ✅ Ouvrir le salon seulement si succès
+                        Salon salon = new Salon(pseudo);
+                        this.setVisible(false);
+                        salon.setVisible(true);
+
+                    } else {
+                        jLabel2.setText("Identifiants incorrects");
+                    }
+
+                    res.close();
+                    st.close();
+
+                } catch (SQLException ex) {
+                    jLabel2.setText("Erreur SQL : " + ex.getMessage());
                 }
-                
-
-                st.close();
-                
-//                Salon salon = new Salon();
-//                this.setVisible(false);
-//                salon.setVisible(true);
-//                String sqlUpdate = "UPDATE abeille SET connecte=1 WHERE pseudo=?";
-//                st.setString(1, pseudo); // pseudo du joueur courant
-//                st.executeUpdate();
-//                st.close();
-
-
-         } catch (SQLException ex) {
-                jLabel2.setText("Erreur SQL : " + ex.getMessage());
-            } catch (IOException ex) {
-            logger.log(Level.SEVERE, null, ex);
-        }
 
     }//GEN-LAST:event_jButton3ActionPerformed
 
@@ -272,55 +289,67 @@ public class AccueilLogin extends javax.swing.JFrame {
             try {
                     Connection connexion = SingletonJDBC.getInstance().getConnection();
 
-                    String pseudo = jTextPane1.getText();
+                    String pseudo = jTextPane1.getText().trim();
                     String mdp = new String(jPasswordField1.getPassword());
 
+                    if (pseudo.isEmpty() || mdp.isEmpty()) {
+                        jLabel2.setText("Pseudo et mot de passe obligatoires");
+                        return;
+                    }
+
                     // 1) Vérifier si le pseudo existe déjà
-                    String check = "SELECT * FROM utilisateurs WHERE pseudo=?";
+                    String check = "SELECT 1 FROM utilisateurs WHERE pseudo=?";
                     PreparedStatement stCheck = connexion.prepareStatement(check);
                     stCheck.setString(1, pseudo);
                     ResultSet res = stCheck.executeQuery();
 
                     if (res.next()) {
                         jLabel2.setText("Pseudo déjà utilisé !");
+                        res.close();
                         stCheck.close();
                         return;
                     }
+                    res.close();
                     stCheck.close();
 
-                    // 2) Insérer un nouveau compte dans utilisateurs
-                    String sql = "INSERT INTO utilisateurs(pseudo, motdepasse) VALUES (?, MD5(?))";
-                    PreparedStatement st = connexion.prepareStatement(sql);
-                    st.setString(1, pseudo);
-                    st.setString(2, mdp);
-                    st.executeUpdate();
-                    st.close();
+                    // 2) Créer le compte
+                    String sqlUser = "INSERT INTO utilisateurs(pseudo, motdepasse) VALUES (?, MD5(?))";
+                    PreparedStatement stUser = connexion.prepareStatement(sqlUser);
+                    stUser.setString(1, pseudo);
+                    stUser.setString(2, mdp);
+                    stUser.executeUpdate();
+                    stUser.close();
 
-                    // 3) Créer automatiquement une abeille pour ce joueur avec la couleur choisie
-                    String couleurChoisie = jComboBox3.getSelectedItem().toString(); // <-- couleur de la JComboBox
-                    String sqlAbeille = "INSERT INTO abeille (pseudo, x, y, pv, qnt_nectar, qnt_pollen, couleur , connecte) VALUES (?, ?, ?, ?, ?, ?, ? , ?)";
+                    // 3) Couleur choisie (on nettoie)
+                    String couleurChoisie = jComboBox3.getSelectedItem().toString().trim().toLowerCase();
+                    if (couleurChoisie.equals("blue")) couleurChoisie = "bleu";  // si tu veux stocker en français
+
+                    // 4) Créer l'abeille + CONNECTE=1 
+                    String sqlAbeille =
+                        "INSERT INTO abeille (pseudo, x, y, pv, qnt_pollen, couleur, connecte) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
                     PreparedStatement stA = connexion.prepareStatement(sqlAbeille);
-
-                    stA.setString(1, pseudo);        // même pseudo que l’utilisateur
-                    stA.setInt(2, 0);                // x
-                    stA.setInt(3, 0);                // y
-                    stA.setInt(4, 20);               // pv
-                    stA.setInt(5, 0);                // qnt_nectar
-                    stA.setInt(6, 0);                // qnt_pollen
-                    stA.setString(7, couleurChoisie); // <-- couleur choisie
-                    stA.setInt(8, 0);
-                    
+                    stA.setString(1, pseudo);
+                    stA.setInt(2, 0);
+                    stA.setInt(3, 0);
+                    stA.setInt(4, 5);
+                    stA.setInt(5, 0);
+                    stA.setString(6, couleurChoisie);
+                    stA.setInt(7, 1); //  connecté dès l'inscription
                     stA.executeUpdate();
                     stA.close();
 
-                    jLabel2.setText("Compte créé + Abeille " + couleurChoisie + " créée !");
-                    Salon salon = new Salon();
+                    jLabel2.setText("Compte créé : " + pseudo + " (" + couleurChoisie + ")");
+
+                    // ✅ ouvrir salon avec le pseudo
+                    Salon salon = new Salon(pseudo);
                     this.setVisible(false);
                     salon.setVisible(true);
 
-            } catch (SQLException ex) {
-                jLabel2.setText("Erreur SQL : " + ex.getMessage());
-            }
+                } catch (SQLException ex) {
+                    jLabel2.setText("Erreur SQL : " + ex.getMessage());
+                }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jComboBox3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox3ActionPerformed
@@ -343,8 +372,6 @@ public class AccueilLogin extends javax.swing.JFrame {
     private javax.swing.JTextField champPseudo;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton3;
-    private javax.swing.JComboBox<String> jComboBox1;
-    private javax.swing.JComboBox<String> jComboBox2;
     private javax.swing.JComboBox<String> jComboBox3;
     private javax.swing.JDialog jDialog1;
     private javax.swing.JLabel jLabel1;
