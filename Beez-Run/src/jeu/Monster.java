@@ -18,7 +18,14 @@ public class Monster {
     protected BufferedImage sprite;
     protected double x_frelon, y_frelon;
     private int direction = 0;
-    private int spriteSize = 100;
+    private static int spriteSize = 100;
+    
+    // -------- Hitbox (ajuste si besoin) --------
+    // Sprite tile = 64x64, on prend une hitbox plus petite pour éviter "accrocher" partout
+    private static final int HIT_W = spriteSize/2;
+    private static final int HIT_H = spriteSize/2;
+    private static final int HIT_OX = HIT_W/2;  // offset à partir de x
+    private static final int HIT_OY = HIT_H/2;  // offset à partir de y
 
     protected int squareSizeMax = 400;
     protected int squareSizeMin = 50;
@@ -42,10 +49,25 @@ public class Monster {
     private int damageDelay = 0;
     private int delay = 30;
     
-//   (Carte laCarte) dans le parentes
+    // -------- Référence carte --------
+    private final Carte carte;
+    
+    // -------- Mouvement aléatoire --------
+    private double randDirX = 0;
+    private double randDirY = 0;
+    private int randTimer = 0;
+    private final int RAND_TIME_MAX = 60; // ticks antes de trocar direção
 
-    public Monster() throws IOException {
+    // -------- Limites du monde (pixels) --------
+    private final int WORLD_MIN_X = 0;
+    private final int WORLD_MIN_Y = 0;
+    private final int WORLD_MAX_X = 1280; // largeur de la carte
+    private final int WORLD_MAX_Y = 960; // hauteur de la carte
 
+
+    public Monster(Carte carte) throws IOException {
+
+        this.carte = carte;
         this.uneSpriteSheet_frelon = new SpriteSheet_frelon();
         this.sprite = uneSpriteSheet_frelon.getFrame(0);
     }
@@ -104,8 +126,8 @@ public class Monster {
                     if (connecte && etat_abeille != 5) {
 
                         // distância Manhattan
-                        double dx = xA - x_frelon;
-                        double dy = yA - y_frelon;
+                        double dx = xA - x_frelon + HIT_OX;
+                        double dy = yA - y_frelon + HIT_OY;
                         double distTmp = Math.abs(dx) + Math.abs(dy);
 
                         // dentro do raio de detecção?
@@ -136,35 +158,52 @@ public class Monster {
             }
 
             // 3) MOVER — perseguir ou patrulhar
-            if(damageDelay == 0){ // Etat normal, il peut bouger
-                if (dist <= detectionRadius) {
+            if (damageDelay == 0) {
 
-                    // perseguir abelha mais próxima
+                double nx = x_frelon;
+                double ny = y_frelon;
+
+                if (dist <= detectionRadius) {
+                    // ====== POURSUIVRE ABEILLE ======
                     double dx = targetX - x_frelon;
                     double dy = targetY - y_frelon;
 
                     double len = Math.sqrt(dx * dx + dy * dy);
-
                     if (len > 0.1) {
-                        x_frelon += (dx / len) * vitesse;
-                        y_frelon += (dy / len) * vitesse;
+                        nx += (dx / len) * vitesse;
+                        ny += (dy / len) * vitesse;
                     }
 
                 } else {
-                    // movimento padrão em quadrado
-                    if (y_frelon <= squareSizeMin && x_frelon < squareSizeMax) {
-                        x_frelon += vitesse;
-                    } else if (x_frelon >= squareSizeMax && y_frelon < squareSizeMax) {
-                        y_frelon += vitesse;
-                    } else if (y_frelon >= squareSizeMax && x_frelon > squareSizeMin) {
-                        x_frelon -= vitesse;
-                    } else if (x_frelon <= squareSizeMin && y_frelon > squareSizeMin) {
-                        y_frelon -= vitesse;
-                    }else{
-                        x_frelon -= vitesse;
+                    // ====== MOUVEMENT ALÉATOIRE ======
+                    if (randTimer <= 0 || (randDirX == 0 && randDirY == 0)) {
+                        chooseRandomDirection();
                     }
+
+                    nx += randDirX * vitesse;
+                    ny += randDirY * vitesse;
+                    randTimer--;
                 }
+
+                // ====== COLLISIONS (SLIDE) ======
+                if (!collidesAt(nx, y_frelon)) {
+                    x_frelon = nx;
+                } else {
+                    x_frelon = pushOutX(x_frelon, nx, y_frelon);
+                    chooseRandomDirection(); // rebond
+                }
+
+                if (!collidesAt(x_frelon, ny)) {
+                    y_frelon = ny;
+                } else {
+                    y_frelon = pushOutY(y_frelon, ny, x_frelon);
+                    chooseRandomDirection(); // rebond
+                }
+                // ====== Limites de la carte ======
+                x_frelon = clamp(x_frelon, WORLD_MIN_X - HIT_OX, WORLD_MAX_X - HIT_OX - HIT_W);
+                y_frelon = clamp(y_frelon, WORLD_MIN_Y - HIT_OY, WORLD_MAX_Y - HIT_OY - HIT_H);
             }
+
             if(x_frelon < x){
                 direction = 0;
             }else if(x_frelon > x){
@@ -210,7 +249,6 @@ public class Monster {
                 this.sprite = uneSpriteSheet_frelon.getFrame(currentFrame);
             }else{
                 if(damageDelay > 0){
-                    damageDelay -= 1;
                     etat = 1;
                     currentFrame = (currentFrame + 1) % 2; // 3, 4
                     this.sprite = uneSpriteSheet_frelon.getFrame(currentFrame + 3);
@@ -233,7 +271,14 @@ public class Monster {
             }
         }
     }
+    
+    private boolean collidesAt(double newX, double newY) {
+        double left   = newX + HIT_OX;
+        double right  = newX + HIT_OX + HIT_W - 1;
+        double top    = newY + HIT_OY;
+        double bottom = newY + HIT_OY + HIT_H - 1;
 
+<<<<<<< Updated upstream
     public void spawnAt(double x, double y) {
     this.x_frelon = x;
     this.y_frelon = y;
@@ -251,6 +296,74 @@ public class Monster {
         st.close();
     } catch (SQLException e) {
         e.printStackTrace();
+=======
+        return carte.isSolidPixel(left, top)
+            || carte.isSolidPixel(right, top)
+            || carte.isSolidPixel(left, bottom)
+            || carte.isSolidPixel(right, bottom);
+    }
+
+    // Si tu bloques en X, on tente de sortir un peu (optionnel)
+    private double pushOutX(double oldX, double targetX, double yFixed) {
+        // on avance/recul 1px à la fois vers targetX jusqu'à collision, puis on revient
+        double step = (targetX > oldX) ? 1 : -1;
+        double xTest = oldX;
+        while (xTest != targetX) {
+            double next = xTest + step;
+            if (collidesAt(next, yFixed)) {
+                return xTest;
+            }
+            xTest = next;
+            if (Math.abs(xTest - targetX) < 0.5) break;
+        }
+        return xTest;
+    }
+
+    private double pushOutY(double oldY, double targetY, double xFixed) {
+        double step = (targetY > oldY) ? 1 : -1;
+        double yTest = oldY;
+        while (yTest != targetY) {
+            double next = yTest + step;
+            if (collidesAt(xFixed, next)) {
+                return yTest;
+            }
+            yTest = next;
+            if (Math.abs(yTest - targetY) < 0.5) break;
+        }
+        return yTest;
+    }
+
+    // Empêche de spawn dans un mur (simple)
+    private void resolveIfSpawnInWall() {
+        if (!collidesAt(x_frelon, y_frelon)) return;
+
+        // essaie de trouver un spot proche (petite recherche)
+        for (int r = 0; r < 10; r++) {
+            for (int dy = -r; dy <= r; dy++) {
+                for (int dx = -r; dx <= r; dx++) {
+                    double nx = x_frelon + dx * 5;
+                    double ny = y_frelon + dy * 5;
+                    if (!collidesAt(nx, ny)) {
+                        x_frelon = nx;
+                        y_frelon = ny;
+                        return;
+                    }
+                }
+            }
+        }
+        // sinon, laisse tel quel (debug)
+    }
+
+    private void chooseRandomDirection() {
+        double angle = Math.random() * 2 * Math.PI;
+        randDirX = Math.cos(angle);
+        randDirY = Math.sin(angle);
+        randTimer = RAND_TIME_MAX;
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
+>>>>>>> Stashed changes
     }
 }
 
@@ -260,3 +373,4 @@ public class Monster {
     public double getLargeur() { return sprite.getHeight(); }
     public double getHauteur() { return sprite.getWidth(); }
 }
+

@@ -34,6 +34,7 @@ public class Jeu {
 
     public Jeu(String name) throws IOException {
         this.carte = new Carte();
+<<<<<<< Updated upstream
         this.uneMonster = new Monster();
         this.uneAbeille = new Abeille();
         this.uneRuche = new Ruche();
