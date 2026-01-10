@@ -10,11 +10,14 @@ public class Jeu {
     private final Abeille uneAbeille;
     private final Ruche uneRuche;
     private final HUD hud;
+    private final Fleur uneFleur;
+
 
     public Jeu(String name) throws IOException {
         this.carte = new Carte();
         this.uneMonster = new Monster();
-        this.uneAvatar = new Avatar(name, this.carte);   // <- mudou aqui
+        this.uneAvatar = new Avatar(name, this.carte);
+        this.uneFleur = new Fleur(); 
         this.uneAbeille = new Abeille();
         this.uneRuche = new Ruche();
         this.hud = new HUD(this.uneAvatar);
@@ -24,6 +27,7 @@ public class Jeu {
         this.carte.rendu(contexte);
         this.uneMonster.rendu(contexte);
         this.uneRuche.rendu(contexte);
+        this.uneFleur.rendu(contexte);
         this.uneAbeille.rendu(contexte); 
         this.hud.rendu(contexte);
     }
@@ -33,6 +37,8 @@ public class Jeu {
         this.uneMonster.miseAJour();
         this.uneAvatar.miseAJour();
         this.uneAbeille.miseAJour();
+        this.uneFleur.miseAJour();
+
     }
 
     public Avatar getAvatar() { return uneAvatar; }
