@@ -82,7 +82,7 @@ public class Fleur {
             Connection c = SingletonJDBC.getInstance().getConnection();
 
             PreparedStatement st = c.prepareStatement(
-<<<<<<< Updated upstream
+
                 "UPDATE fleur " +
                 "SET etat = 1, next_available_at = NULL " +
                 "WHERE id = ? AND etat = 0 AND next_available_at IS NOT NULL AND NOW() >= next_available_at"

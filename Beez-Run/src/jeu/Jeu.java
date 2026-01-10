@@ -28,25 +28,24 @@ public class Jeu {
     private final BufferedImage winImg;
     private final BufferedImage loseImg;
 
-
     private static final double FRELON_SPAWN_X = 350;
     private static final double FRELON_SPAWN_Y = 700;
 
     public Jeu(String name) throws IOException {
         this.carte = new Carte();
-<<<<<<< Updated upstream
-        this.uneMonster = new Monster();
+
+        // ✅ Monster agora precisa da Carte (para collisions)
+        this.uneMonster = new Monster(this.carte);
+
         this.uneAbeille = new Abeille();
         this.uneRuche = new Ruche();
 
-       
+        // ✅ 6 flores (id 1..6) usando o MESMO spritesheet (economiza memória)
         this.fleurs = new ArrayList<>();
         SpriteSheetFleur sharedSheet = new SpriteSheetFleur();
-
         for (int i = 1; i <= 6; i++) {
-           this.fleurs.add(new Fleur(i, sharedSheet));
-         }
-    
+            this.fleurs.add(new Fleur(i, sharedSheet));
+        }
 
         this.uneAvatar = new Avatar(name, this.carte, this.fleurs, this.uneRuche);
 
@@ -55,6 +54,7 @@ public class Jeu {
         this.winImg  = ImageIO.read(getClass().getResource("/resources/gamewin.png"));
         this.loseImg = ImageIO.read(getClass().getResource("/resources/gamelost.png"));
 
+        // ✅ força spawn do frelon no DB ao iniciar
         forceFrelonSpawnDB(FRELON_SPAWN_X, FRELON_SPAWN_Y);
     }
 
@@ -73,10 +73,15 @@ public class Jeu {
 
     public void rendu(Graphics2D g) {
         carte.rendu(g);
+
+        // cenário primeiro
         uneRuche.rendu(g);
         for (Fleur f : fleurs) f.rendu(g);
+
+        // entidades móveis por cima
         uneMonster.rendu(g);
         uneAbeille.rendu(g);
+
         hud.rendu(g);
 
         if (gameState == GameState.WIN) {
@@ -90,14 +95,15 @@ public class Jeu {
 
     private void drawPressSpace(Graphics2D g) {
         g.setFont(new Font("Arial", Font.BOLD, 28));
-        g.setColor(java.awt.Color.BLACK);
+        g.setColor(java.awt.Color.BLACK); // ✅ preto
         String msg = "Press SPACE to play again";
-        int x = 1280/2 - g.getFontMetrics().stringWidth(msg)/2;
+        int x = 1280 / 2 - g.getFontMetrics().stringWidth(msg) / 2;
         int y = 960 - 80;
         g.drawString(msg, x, y);
     }
 
     private void checkEndGame() {
+        // 12 entregas * 3 polens = 36 (se foi essa sua regra)
         if (uneRuche.getScore() >= 36) {
             gameState = GameState.WIN;
             return;
@@ -139,21 +145,21 @@ public class Jeu {
         try {
             Connection c = SingletonJDBC.getInstance().getConnection();
 
-            // 1) reset RUche: zera score
+            // 1) reset Ruche
             PreparedStatement stR = c.prepareStatement(
                 "UPDATE ruche SET score = 0 WHERE id = 1"
             );
             stR.executeUpdate();
             stR.close();
 
-            // 2) reset FLORES: todas com pólen e next_available_at válido (NOT NULL)
+            // 2) reset Flores (etat=1 e next_available_at não nulo)
             PreparedStatement stF = c.prepareStatement(
                 "UPDATE fleur SET etat = 1, next_available_at = NOW() WHERE id BETWEEN 1 AND 6"
             );
             stF.executeUpdate();
             stF.close();
 
-            // 3) reset ABELHAS: perto da colmeia, sem pólen, vivas
+            // 3) reset Abelhas perto da colmeia
             double rx = 0, ry = 0;
             PreparedStatement stPos = c.prepareStatement("SELECT x, y FROM ruche WHERE id = 1");
             ResultSet rs = stPos.executeQuery();
@@ -197,7 +203,7 @@ public class Jeu {
             stB.executeUpdate();
             stB.close();
 
-            // 4) reset FRELON: volta para (350, 700)
+            // 4) reset Frelon
             forceFrelonSpawnDB(FRELON_SPAWN_X, FRELON_SPAWN_Y);
 
         } catch (SQLException ex) {
@@ -206,14 +212,13 @@ public class Jeu {
 
         gameState = GameState.RUNNING;
 
-        // (opcional) força atualizar objetos locais imediatamente
+        // força refresh local
         uneRuche.miseAJour();
         for (Fleur f : fleurs) f.miseAJour();
-        // uneMonster vai ler do DB no próximo miseAJour() dele
     }
 
     // ============================================================
-    // HELPER: spawn do frelon via DB (fonte de verdade)
+    // HELPER: spawn do frelon via DB
     // ============================================================
     private void forceFrelonSpawnDB(double x, double y) {
         try {
